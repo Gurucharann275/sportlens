@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "SportLens",
+    "slug": "sportlens",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#070B14"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.sportlens.app"
+    },
+    "android": {
+      "package": "com.sportlens.app",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "VIBRATE"
+      ]
+    },
+    "extra": {
+      "eas": {
+        "projectId": "38a2e9a7-b4db-4768-93c6-bf9528d98288"
+      }
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-font"
+    ]
+  }
+}
