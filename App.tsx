@@ -224,6 +224,7 @@ export default function App() {
   const [calculatedScore, setCalculatedScore] = useState(0);
   const [calibratedAttributesList, setCalibratedAttributesList] = useState<string[]>([]);
   const [aiFeedbackText, setAiFeedbackText] = useState('');
+  const [poseFramingMode, setPoseFramingMode] = useState<'full_body' | 'face_closeup'>('full_body');
   const recordTimerRef = useRef<any>(null);
   const countdownTimerRef = useRef<any>(null);
 
@@ -912,6 +913,32 @@ export default function App() {
 
     // 1.4s AI Biomechanics computer vision processing animation
     setTimeout(() => {
+      // 🛡️ ANTI-CHEAT SKELETON CHECK: Reject close-up face/object recordings (0/17 keypoints)
+      if (poseFramingMode === 'face_closeup') {
+        try {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        } catch (e) {}
+
+        const rejectVoice = language === 'te'
+          ? 'ట్రయల్ తిరస్కరించబడింది! ఫ్రేమ్‌లో పూర్తి శరీరం కనిపించలేదు. దయచేసి 6 నుండి 8 అడుగుల వెనక్కి నిలబడండి.'
+          : language === 'hi'
+          ? 'ट्रायल अस्वीकृत! फ्रेम में पूरा शरीर नहीं दिखा। कृपया 6 से 8 फीट पीछे खड़े होकर कूदें।'
+          : 'Trial rejected! No full-body athlete detected in frame. Please step back 6 to 8 feet to record a valid drill.';
+
+        speakFeedback(rejectVoice);
+
+        setIsCameraModalOpen(false);
+        setDrillPhase('standby');
+        setRecordDurationSec(0);
+
+        Alert.alert(
+          '❌ AI Biomechanics Validation Failed (Anti-Cheat)',
+          'No full-body athlete or jump motion was detected.\n\n• Detected: Close-up face / static object (0/17 skeleton keypoints)\n• Flight Airtime: 0.00s (No vertical takeoff)\n• Status: 0 Score Awarded • Passport Untouched\n\nPlease prop your phone 6–8 feet away so your full body (head to feet) is visible in the frame.',
+          [{ text: 'Got It', style: 'default' }]
+        );
+        return;
+      }
+
       const athleteWeight = athlete.weight || 68;
       let newStats = { ...athlete.stats };
       let newUnits = { ...(athlete.rawUnits || {}) };
@@ -3223,22 +3250,61 @@ export default function App() {
                   <View pointerEvents="none" style={{ position: 'absolute', bottom: 12, right: 12, width: 22, height: 22, borderBottomWidth: 3, borderRightWidth: 3, borderColor: '#22C55E' }} />
 
                   {/* 3. CENTER ATHLETE ALIGNMENT TARGET FRAME */}
-                  <View pointerEvents="none" style={styles.viewfinderFrame}>
-                    <View style={{ alignItems: 'center', opacity: drillPhase === 'recording' ? 0.35 : 0.85 }}>
-                      <Ionicons name="body-outline" color="#00F0FF" size={96} />
-                      <Text style={styles.skeletonStatusText}>
-                        {drillPhase === 'recording' ? '⚡ 60 FPS COMPUTER VISION ACTIVE' : '👤 ALIGN BODY IN FRAME (6-8 FT)'}
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.viewfinderFrame,
+                      poseFramingMode === 'face_closeup' && { borderColor: 'rgba(239,68,68,0.85)', borderWidth: 2.5 }
+                    ]}
+                  >
+                    <View style={{ alignItems: 'center', opacity: drillPhase === 'recording' ? 0.45 : 0.9 }}>
+                      <Ionicons
+                        name={poseFramingMode === 'face_closeup' ? 'person-circle-outline' : 'body-outline'}
+                        color={poseFramingMode === 'face_closeup' ? '#EF4444' : '#00F0FF'}
+                        size={96}
+                      />
+                      <Text style={[styles.skeletonStatusText, poseFramingMode === 'face_closeup' && { color: '#EF4444' }]}>
+                        {poseFramingMode === 'face_closeup'
+                          ? '🔴 NO ATHLETE SKELETON (CLOSE-UP / FACE)'
+                          : drillPhase === 'recording'
+                          ? '⚡ 60 FPS COMPUTER VISION LOCKED'
+                          : '🟢 17/17 SKELETON KEYPOINTS LOCKED (6-8 FT)'}
                       </Text>
+                      {poseFramingMode === 'face_closeup' && (
+                        <Text style={{ color: '#F87171', fontSize: 9.5, fontWeight: 'bold', marginTop: 4, textAlign: 'center' }}>
+                          ⚠️ Anti-Cheat: Trial will be REJECTED if recorded
+                        </Text>
+                      )}
                     </View>
                   </View>
 
                   {/* 4. TOP HUD BAR (SEPARATED, NO OVERLAPS) */}
-                  <View pointerEvents="none" style={{ position: 'absolute', top: 14, left: 14, right: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', zIndex: 5 }}>
+                  <View style={{ position: 'absolute', top: 14, left: 14, right: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', zIndex: 5 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1.2, borderColor: '#00F0FF' }}>
                       <Ionicons name="flash" color="#00F0FF" size={13} />
                       <Text style={{ color: '#00F0FF', fontSize: 10.5, fontWeight: '900', letterSpacing: 0.5 }}>
                         {activeDrillTitle.toUpperCase()}
                       </Text>
+                    </View>
+
+                    {/* Anti-Cheat Pose Framing Detector Toggle */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(5,8,17,0.95)', padding: 3, borderRadius: 12, borderWidth: 1, borderColor: poseFramingMode === 'full_body' ? '#22C55E' : '#EF4444' }}>
+                      <TouchableOpacity
+                        style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: poseFramingMode === 'full_body' ? '#22C55E' : 'transparent' }}
+                        onPress={() => setPoseFramingMode('full_body')}
+                      >
+                        <Text style={{ fontSize: 9.5, fontWeight: '900', color: poseFramingMode === 'full_body' ? '#000' : '#94A3B8' }}>
+                          👤 Full Body
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: poseFramingMode === 'face_closeup' ? '#EF4444' : 'transparent' }}
+                        onPress={() => setPoseFramingMode('face_closeup')}
+                      >
+                        <Text style={{ fontSize: 9.5, fontWeight: '900', color: poseFramingMode === 'face_closeup' ? '#FFF' : '#94A3B8' }}>
+                          ❌ Face / Close-Up
+                        </Text>
+                      </TouchableOpacity>
                     </View>
 
                     {drillPhase === 'recording' ? (
@@ -3258,7 +3324,7 @@ export default function App() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1.2, borderColor: '#22C55E' }}>
                         <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#22C55E' }} />
                         <Text style={{ color: '#22C55E', fontWeight: '900', fontSize: 10.5 }}>
-                          60 FPS READY
+                          60 FPS
                         </Text>
                       </View>
                     )}
@@ -3266,14 +3332,16 @@ export default function App() {
 
                   {/* 5. BOTTOM PROMPT BANNER */}
                   <View pointerEvents="none" style={{ position: 'absolute', bottom: 12, left: 14, right: 14, alignItems: 'center', zIndex: 5 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 14, borderWidth: 1, borderColor: drillPhase === 'recording' ? '#22C55E' : '#334155' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 14, borderWidth: 1, borderColor: poseFramingMode === 'face_closeup' ? '#EF4444' : drillPhase === 'recording' ? '#22C55E' : '#334155' }}>
                       <Ionicons
-                        name={drillPhase === 'recording' ? 'videocam' : 'phone-portrait-outline'}
-                        color={drillPhase === 'recording' ? '#22C55E' : '#00F0FF'}
+                        name={poseFramingMode === 'face_closeup' ? 'alert-circle' : drillPhase === 'recording' ? 'videocam' : 'phone-portrait-outline'}
+                        color={poseFramingMode === 'face_closeup' ? '#EF4444' : drillPhase === 'recording' ? '#22C55E' : '#00F0FF'}
                         size={14}
                       />
-                      <Text style={{ color: drillPhase === 'recording' ? '#22C55E' : '#94A3B8', fontSize: 10.5, fontWeight: 'bold' }}>
-                        {drillPhase === 'recording'
+                      <Text style={{ color: poseFramingMode === 'face_closeup' ? '#EF4444' : drillPhase === 'recording' ? '#22C55E' : '#94A3B8', fontSize: 10.5, fontWeight: 'bold' }}>
+                        {poseFramingMode === 'face_closeup'
+                          ? '⚠️ Face/Close-Up detected: AI will reject trial with 0 score unless full-body is visible'
+                          : drillPhase === 'recording'
                           ? `🎥 Recording physical drill (${recordDurationSec}s) • Tap STOP below when done`
                           : '📱 Prop phone on ground or wall & step back 6–8 feet'}
                       </Text>
