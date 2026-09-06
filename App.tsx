@@ -3300,33 +3300,7 @@ export default function App() {
           <View style={styles.cameraBox}>
             <View style={styles.cameraBoxHeader}>
               <Text style={styles.cameraBoxTitle}>{activeDrillTitle}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                {/* Real-Time Person Presence Toggle Pill */}
-                <TouchableOpacity
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 5,
-                    backgroundColor: isAthleteInFrame ? 'rgba(34,197,94,0.18)' : 'rgba(245,158,11,0.18)',
-                    paddingHorizontal: 8,
-                    paddingVertical: 4,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: isAthleteInFrame ? '#22C55E' : '#F59E0B',
-                  }}
-                  onPress={() => {
-                    const nextState = !isAthleteInFrame;
-                    setIsAthleteInFrame(nextState);
-                    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch (e) {}
-                    speakFeedback(nextState ? 'Athlete detected! 14 joints locked.' : 'Athlete out of frame.', 'en-IN');
-                  }}
-                >
-                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: isAthleteInFrame ? '#22C55E' : '#F59E0B' }} />
-                  <Text style={{ color: isAthleteInFrame ? '#22C55E' : '#F59E0B', fontSize: 10, fontWeight: 'bold' }}>
-                    {isAthleteInFrame ? '👤 Locked (In Frame)' : '🔍 Searching...'}
-                  </Text>
-                </TouchableOpacity>
-
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <TouchableOpacity onPress={() => setCameraFacing(prev => prev === 'front' ? 'back' : 'front')}>
                   <Ionicons name="camera-reverse" color="#22C55E" size={20} />
                 </TouchableOpacity>
@@ -3353,18 +3327,6 @@ export default function App() {
                   </TouchableOpacity>
                 </View>
               )}
-
-              {/* Interactive Viewfinder Tap Target (Tap anywhere to simulate stepping in / stepping out) */}
-              <TouchableOpacity
-                activeOpacity={1}
-                style={StyleSheet.absoluteFill}
-                onPress={() => {
-                  const nextState = !isAthleteInFrame;
-                  setIsAthleteInFrame(nextState);
-                  try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}
-                  speakFeedback(nextState ? 'Athlete detected! 14 joints locked.' : 'Athlete out of frame.', 'en-IN');
-                }}
-              />
 
               {/* Sci-Fi HUD Corner Brackets */}
               <View style={{ position: 'absolute', top: 10, left: 10, width: 24, height: 24, borderTopWidth: 3, borderLeftWidth: 3, borderColor: isAthleteInFrame ? '#00F0FF' : '#F59E0B' }} />
