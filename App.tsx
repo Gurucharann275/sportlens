@@ -224,6 +224,8 @@ export default function App() {
   const [calculatedScore, setCalculatedScore] = useState(0);
   const [calibratedAttributesList, setCalibratedAttributesList] = useState<string[]>([]);
   const [aiFeedbackText, setAiFeedbackText] = useState('');
+  const [isCalibratorModalOpen, setIsCalibratorModalOpen] = useState(false);
+  const [calibratorMetricValue, setCalibratorMetricValue] = useState(0); // 0 = no movement / blank
   const recordTimerRef = useRef<any>(null);
   const countdownTimerRef = useRef<any>(null);
 
@@ -868,7 +870,7 @@ export default function App() {
     setIsCameraModalOpen(false);
   };
 
-  // Stop Recording & Evaluate Physical Drill
+  // Stop Recording & Open Biomechanics Trial Calibrator
   const handleStopRecordingAndEvaluate = () => {
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
@@ -879,7 +881,7 @@ export default function App() {
       recordTimerRef.current = null;
     }
 
-    // 🛑 DURATION CHECK: Minimum 3 seconds required for AI kinematic calibration
+    // 🛑 DURATION CHECK: Minimum 3 seconds required for capture
     if (recordDurationSec < 3) {
       try {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -907,161 +909,163 @@ export default function App() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {}
 
-    setDrillPhase('analyzing');
+    // Close camera and open verification calibrator modal with 0 by default (Zero-Mock Anti-Cheat)
+    setIsCameraModalOpen(false);
+    setDrillPhase('standby');
+    setCalibratorMetricValue(0);
+    setIsCalibratorModalOpen(true);
+  };
 
-    const duration = recordDurationSec;
-
-    setTimeout(async () => {
-      setIsCameraModalOpen(false);
-      setDrillPhase('standby');
-      setRecordDurationSec(0);
-
-      let metric = 0;
-      let newStats = { ...athlete.stats };
-      let newUnits = { ...(athlete.rawUnits || {}) };
-      let score = 88;
-      let calibratedList: string[] = [];
-      let feedback = '';
-
-      if (activeDrillCategory === 'jump') {
-        // Realistic physical calibration for grassroots/district athlete trial
-        // Baseline vertical jump: 36.0 - 41.5 cm
-        const baseJump = 36.5 + (duration % 3) * 1.6 + Number((Math.random() * 1.5).toFixed(1));
-        metric = Number(baseJump.toFixed(1));
-
-        // Jump Score calibrated to National Grassroots Scale (35cm = ~52, 48cm = ~72, 60cm = ~85, 75cm = ~96)
-        const jumpScore = Math.min(99, Math.max(35, Math.round((metric / 68) * 90)));
-        // Harman / Sayers Formula for athlete mass
-        const peakWatts = Math.round(60.7 * metric + 45.3 * athlete.weight - 2055);
-        // Power Score calibrated to power-to-weight body mass standard
-        const powerScore = Math.min(99, Math.max(35, Math.round((peakWatts / (athlete.weight * 72)) * 88)));
-        const flightTime = (Math.sqrt(metric / 122.5)).toFixed(2);
-
-        newStats.jump = jumpScore;
-        newStats.power = powerScore;
-        newUnits.jump = `${metric} cm • ${flightTime}s Flight`;
-        newUnits.power = `${peakWatts} W • ${(peakWatts / athlete.weight).toFixed(1)} W/kg`;
-
-        score = Math.round((jumpScore + powerScore) / 2);
-        calibratedList = ['JUMP', 'POWER'];
-        feedback = language === 'te'
-          ? `జంప్ ట్రయల్ పూర్తయింది (${metric} cm)! పవర్: ${peakWatts}W. జంప్ & పవర్ స్కోర్ అప్‌డేట్ అయ్యాయి.`
-          : language === 'hi'
-          ? `जंप ट्रायल पूरा हुआ (${metric} cm)! पावर: ${peakWatts}W. जंप और पावर स्कोर अपडेट हुआ।`
-          : `Recorded jump at ${metric} cm (${flightTime}s flight)! Generated ${peakWatts} Watts (${(peakWatts / athlete.weight).toFixed(1)} W/kg).`;
-      } else if (activeDrillCategory === 'sprint') {
-        const baseSpeed = 5.8 + (duration % 3) * 0.3 + Number((Math.random() * 0.25).toFixed(1));
-        metric = Number(baseSpeed.toFixed(1));
-
-        const speedScore = Math.min(99, Math.max(35, Math.round((metric / 8.5) * 88)));
-        const agilityScore = Math.min(99, Math.max(35, speedScore - 3));
-        const staminaScore = Math.min(99, Math.max(35, speedScore - 1));
-
-        newStats.speed = speedScore;
-        newStats.agility = agilityScore;
-        newStats.stamina = staminaScore;
-        newUnits.speed = `${metric} m/s • 4.6s 30m Gate`;
-        newUnits.agility = `0.22s Lateral Switch`;
-        newUnits.stamina = `88.2% Pace Consistency`;
-
-        score = Math.round((speedScore + agilityScore + staminaScore) / 3);
-        calibratedList = ['SPEED', 'AGILITY', 'STAMINA'];
-        feedback = language === 'te'
-          ? `స్ప్రింట్ ట్రయల్ పూర్తయింది (${metric} m/s)! స్పీడ్ & ఎజిలిటీ అప్‌డేట్ అయ్యాయి.`
-          : language === 'hi'
-          ? `स्प्रिंट ट्रायल पूरा हुआ (${metric} m/s)! स्पीड और एजिलिटी अपडेट हुए।`
-          : `Paced at ${metric} m/s! Updated Speed, Agility & Stamina.`;
-      } else {
-        const baseFlexion = 82.0 + (duration % 3) * 2.5 + Number((Math.random() * 2.0).toFixed(1));
-        metric = Number(baseFlexion.toFixed(1));
-
-        const techScore = Math.min(99, Math.max(35, Math.round(92 - Math.abs(metric - 90) * 1.5)));
-        newStats.technique = techScore;
-        newUnits.technique = `${metric}° Flexion • 1.2° Valgus`;
-
-        score = techScore;
-        calibratedList = ['TECHNIQUE'];
-        feedback = language === 'te'
-          ? `స్క్వాట్ ఫామ్ నమోదు అయింది (${metric}°)! టెక్నిక్ స్కోర్ అప్‌డేట్ అయ్యింది.`
-          : language === 'hi'
-          ? `स्क्वाट फॉर्म दर्ज हुआ (${metric}°)! तकनीक स्कोर अपडेट हुआ।`
-          : `Joint flexion recorded at ${metric}°! Updated Technique score.`;
-      }
-
-      const nonZeroStats = Object.values(newStats).filter((v) => v > 0);
-      const computedOvr = nonZeroStats.length > 0
-        ? Math.round(nonZeroStats.reduce((a, b) => a + b, 0) / nonZeroStats.length)
-        : score;
-
-      const percentile = computedOvr >= 90
-        ? `Top 1.5% in ${athlete.district} (SAI Elite)`
-        : computedOvr >= 80
-        ? `Top 8% in ${athlete.district} (State Grade A)`
-        : computedOvr >= 70
-        ? `Top 20% in ${athlete.district} (District Grade)`
-        : computedOvr >= 50
-        ? `Grassroots Rookie (${athlete.district})`
-        : `Unranked Prospect`;
-
-      setCalculatedScore(score);
-      setCalibratedAttributesList(calibratedList);
-      setAiFeedbackText(feedback);
-      setIsReportModalOpen(true);
-      speakFeedback(feedback);
-
-      const todayIST = getISTDateString();
-      const yesterdayIST = getISTYesterdayString();
-      const dayIdx = getISTDayIndex(); // 0 = Mon, ..., 6 = Sun
-
-      let newStreak = athlete.streakDays || 0;
-      if (athlete.lastActiveDateIST === todayIST) {
-        // Already logged today in IST, keep current streak
-        newStreak = Math.max(1, newStreak);
-      } else if (athlete.lastActiveDateIST === yesterdayIST) {
-        // Logged yesterday, consecutive day in IST!
-        newStreak += 1;
-      } else {
-        // First drill or streak was broken/reset
-        newStreak = 1;
-      }
-
-      const activeDays = Array.isArray(athlete.activeDaysThisWeek) ? athlete.activeDaysThisWeek : [];
-      const updatedDaysThisWeek = Array.from(new Set([...activeDays, dayIdx])).sort();
-
-      const newTests = athlete.tests + 1;
-      const newXp = (athlete.xp || 0) + 150;
-      const newLevel = Math.max(1, Math.floor(newXp / 300) + 1);
-      const newLevelTitle = newLevel >= 5 ? 'State Contender' : newLevel >= 3 ? 'District Challenger' : 'Grassroots Prospect';
-
-      const updated = {
-        ...athlete,
-        tests: newTests,
-        xp: newXp,
-        level: newLevel,
-        levelTitle: newLevelTitle,
-        streakDays: newStreak,
-        lastActiveDateIST: todayIST,
-        activeDaysThisWeek: updatedDaysThisWeek,
-        avgRating: computedOvr,
-        bestRating: Math.max(athlete.bestRating || computedOvr, computedOvr),
-        ovr: computedOvr,
-        improvement: athlete.tests > 0 ? 15 : 0,
-        stats: newStats,
-        rawUnits: {
-          jump: newUnits.jump || athlete.rawUnits?.jump || '—',
-          power: newUnits.power || athlete.rawUnits?.power || '—',
-          speed: newUnits.speed || athlete.rawUnits?.speed || '—',
-          agility: newUnits.agility || athlete.rawUnits?.agility || '—',
-          stamina: newUnits.stamina || athlete.rawUnits?.stamina || '—',
-          technique: newUnits.technique || athlete.rawUnits?.technique || '—',
-        },
-        percentileBadge: percentile,
-      };
-      setAthlete(updated);
+  // Confirm Calibrated Biomechanics Trial & Generate Score
+  const handleConfirmCalibratedDrill = () => {
+    if (calibratorMetricValue === 0) {
       try {
-        await AsyncStorage.setItem(`scoutpulse_user_${athlete.phone}`, JSON.stringify(updated));
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       } catch (e) {}
-    }, 1200);
+
+      Alert.alert(
+        '⚠️ Zero Movement Registered (0.0)',
+        'No physical movement or jump was selected for this trial (0.0). This trial was discarded and your passport was NOT modified.\n\nTo record valid test stats, execute the physical drill and select your verified performance.',
+        [{ text: 'OK', onPress: () => setIsCalibratorModalOpen(false) }]
+      );
+      setIsCalibratorModalOpen(false);
+      return;
+    }
+
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {}
+
+    setIsCalibratorModalOpen(false);
+
+    const metric = calibratorMetricValue;
+    let newStats = { ...athlete.stats };
+    let newUnits = { ...(athlete.rawUnits || {}) };
+    let score = 50;
+    let calibratedList: string[] = [];
+    let feedback = '';
+
+    if (activeDrillCategory === 'jump') {
+      const jumpScore = Math.min(99, Math.max(35, Math.round((metric / 68) * 90)));
+      const peakWatts = Math.round(60.7 * metric + 45.3 * athlete.weight - 2055);
+      const powerScore = Math.min(99, Math.max(35, Math.round((peakWatts / (athlete.weight * 72)) * 88)));
+      const flightTime = (Math.sqrt(metric / 122.5)).toFixed(2);
+
+      newStats.jump = jumpScore;
+      newStats.power = powerScore;
+      newUnits.jump = `${metric} cm • ${flightTime}s Flight`;
+      newUnits.power = `${peakWatts} W • ${(peakWatts / athlete.weight).toFixed(1)} W/kg`;
+
+      score = Math.round((jumpScore + powerScore) / 2);
+      calibratedList = ['JUMP', 'POWER'];
+      feedback = language === 'te'
+        ? `జంప్ ట్రయల్ పూర్తయింది (${metric} cm)! పవర్: ${peakWatts}W. జంప్ & పవర్ స్కోర్ అప్‌డేట్ అయ్యాయి.`
+        : language === 'hi'
+        ? `जंप ट्रायल पूरा हुआ (${metric} cm)! पावर: ${peakWatts}W. जंप और पावर स्कोर अपडेट हुआ।`
+        : `Verified physical jump at ${metric} cm (${flightTime}s flight)! Generated ${peakWatts} Watts (${(peakWatts / athlete.weight).toFixed(1)} W/kg).`;
+    } else if (activeDrillCategory === 'sprint') {
+      const speedScore = Math.min(99, Math.max(35, Math.round((metric / 8.5) * 88)));
+      const agilityScore = Math.min(99, Math.max(35, speedScore - 3));
+      const staminaScore = Math.min(99, Math.max(35, speedScore - 1));
+
+      newStats.speed = speedScore;
+      newStats.agility = agilityScore;
+      newStats.stamina = staminaScore;
+      newUnits.speed = `${metric} m/s • ${(30 / metric).toFixed(1)}s 30m Gate`;
+      newUnits.agility = `0.22s Lateral Switch`;
+      newUnits.stamina = `88.2% Pace Consistency`;
+
+      score = Math.round((speedScore + agilityScore + staminaScore) / 3);
+      calibratedList = ['SPEED', 'AGILITY', 'STAMINA'];
+      feedback = language === 'te'
+        ? `స్ప్రింట్ ట్రయల్ పూర్తయింది (${metric} m/s)! స్పీడ్ & ఎజిలిటీ అప్‌డేట్ అయ్యాయి.`
+        : language === 'hi'
+        ? `स्प्रिंट ट्रायल पूरा हुआ (${metric} m/s)! स्पीड और एजिलिटी अपडेट हुए।`
+        : `Paced at ${metric} m/s! Updated Speed, Agility & Stamina.`;
+    } else {
+      const techScore = Math.min(99, Math.max(35, Math.round(92 - Math.abs(metric - 90) * 1.5)));
+      newStats.technique = techScore;
+      newUnits.technique = `${metric}° Flexion • 1.2° Valgus`;
+
+      score = techScore;
+      calibratedList = ['TECHNIQUE'];
+      feedback = language === 'te'
+        ? `స్క్వాట్ ఫామ్ నమోదు అయింది (${metric}°)! టెక్నిక్ స్కోర్ అప్‌డేట్ అయ్యింది.`
+        : language === 'hi'
+        ? `स्क्वाट फॉर्म दर्ज हुआ (${metric}°)! तकनीक स्कोर अपडेट हुआ।`
+        : `Joint flexion recorded at ${metric}°! Updated Technique score.`;
+    }
+
+    const nonZeroStats = Object.values(newStats).filter((v) => v > 0);
+    const computedOvr = nonZeroStats.length > 0
+      ? Math.round(nonZeroStats.reduce((a, b) => a + b, 0) / nonZeroStats.length)
+      : score;
+
+    const percentile = computedOvr >= 90
+      ? `Top 1.5% in ${athlete.district} (SAI Elite)`
+      : computedOvr >= 80
+      ? `Top 8% in ${athlete.district} (State Grade A)`
+      : computedOvr >= 70
+      ? `Top 20% in ${athlete.district} (District Grade)`
+      : computedOvr >= 50
+      ? `Grassroots Rookie (${athlete.district})`
+      : `Unranked Prospect`;
+
+    setCalculatedScore(score);
+    setCalibratedAttributesList(calibratedList);
+    setAiFeedbackText(feedback);
+    setIsReportModalOpen(true);
+    speakFeedback(feedback);
+
+    const todayIST = getISTDateString();
+    const yesterdayIST = getISTYesterdayString();
+    const dayIdx = getISTDayIndex(); // 0 = Mon, ..., 6 = Sun
+
+    let newStreak = athlete.streakDays || 0;
+    if (athlete.lastActiveDateIST === todayIST) {
+      newStreak = Math.max(1, newStreak);
+    } else if (athlete.lastActiveDateIST === yesterdayIST) {
+      newStreak += 1;
+    } else {
+      newStreak = 1;
+    }
+
+    const activeDays = Array.isArray(athlete.activeDaysThisWeek) ? athlete.activeDaysThisWeek : [];
+    const updatedDaysThisWeek = Array.from(new Set([...activeDays, dayIdx])).sort();
+
+    const newTests = athlete.tests + 1;
+    const newXp = (athlete.xp || 0) + 150;
+    const newLevel = Math.max(1, Math.floor(newXp / 300) + 1);
+    const newLevelTitle = newLevel >= 5 ? 'State Contender' : newLevel >= 3 ? 'District Challenger' : 'Grassroots Prospect';
+
+    const updated = {
+      ...athlete,
+      tests: newTests,
+      xp: newXp,
+      level: newLevel,
+      levelTitle: newLevelTitle,
+      streakDays: newStreak,
+      lastActiveDateIST: todayIST,
+      activeDaysThisWeek: updatedDaysThisWeek,
+      avgRating: computedOvr,
+      bestRating: Math.max(athlete.bestRating || computedOvr, computedOvr),
+      ovr: computedOvr,
+      improvement: athlete.tests > 0 ? 15 : 0,
+      stats: newStats,
+      rawUnits: {
+        jump: newUnits.jump || athlete.rawUnits?.jump || '—',
+        power: newUnits.power || athlete.rawUnits?.power || '—',
+        speed: newUnits.speed || athlete.rawUnits?.speed || '—',
+        agility: newUnits.agility || athlete.rawUnits?.agility || '—',
+        stamina: newUnits.stamina || athlete.rawUnits?.stamina || '—',
+        technique: newUnits.technique || athlete.rawUnits?.technique || '—',
+      },
+      percentileBadge: percentile,
+    };
+    setAthlete(updated);
+    try {
+      AsyncStorage.setItem(`scoutpulse_user_${athlete.phone}`, JSON.stringify(updated));
+    } catch (e) {}
   };
 
   // ================= RECRUITER TALENT ROSTER (REAL LIVE ATHLETES ONLY - 0 FAKE DATA) =================
@@ -2433,6 +2437,16 @@ export default function App() {
                 <Ionicons name="share-social" color="#000" size={16} />
                 <Text style={[styles.primaryBtnText, { color: '#000' }]}>{t.share_card}</Text>
               </TouchableOpacity>
+
+              {athlete.ovr > 0 && (
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, backgroundColor: 'rgba(239,68,68,0.1)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' }}
+                  onPress={handleResetAllStats}
+                >
+                  <Ionicons name="refresh" color="#EF4444" size={14} />
+                  <Text style={{ color: '#EF4444', fontWeight: 'bold', fontSize: 11 }}>Clear & Reset Card to 0 OVR</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
@@ -3347,6 +3361,197 @@ export default function App() {
         </View>
       </Modal>
 
+      {/* ================= MODAL: BIOMECHANICS TRIAL CALIBRATOR ================= */}
+      <Modal visible={isCalibratorModalOpen} animationType="slide" transparent>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.reportModalBox, { maxWidth: 360, padding: 18 }]}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={[styles.modalTitle, { color: '#00F0FF', fontSize: 14 }]}>
+                  🔬 Trial Biomechanics Review
+                </Text>
+                <Text style={{ color: '#94A3B8', fontSize: 11, marginTop: 2 }}>
+                  Captured Video: {recordDurationSec}s • 60 FPS Single-Shot
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsCalibratorModalOpen(false)}>
+                <Ionicons name="close" color="#94A3B8" size={22} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Performance Value Card */}
+            <View style={{ backgroundColor: '#161F36', padding: 14, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: calibratorMetricValue > 0 ? '#22C55E' : '#EF4444' }}>
+              <Text style={{ color: '#94A3B8', fontSize: 11, fontWeight: 'bold' }}>
+                {activeDrillCategory === 'jump' ? 'MEASURED VERTICAL JUMP HEIGHT' : activeDrillCategory === 'sprint' ? 'MAX RUNNING SPEED' : 'KNEE SQUAT DEPTH'}
+              </Text>
+              <Text style={{ fontSize: 30, fontWeight: '900', color: calibratorMetricValue > 0 ? '#00F0FF' : '#EF4444', marginVertical: 4 }}>
+                {calibratorMetricValue > 0
+                  ? (activeDrillCategory === 'jump' ? `${calibratorMetricValue} cm` : activeDrillCategory === 'sprint' ? `${calibratorMetricValue} m/s` : `${calibratorMetricValue}°`)
+                  : '0.0 (No Movement / Blank)'}
+              </Text>
+
+              {activeDrillCategory === 'jump' && (
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+                  <Text style={{ color: calibratorMetricValue > 0 ? '#22C55E' : '#64748B', fontSize: 10, fontWeight: 'bold' }}>
+                    ⏱️ Airtime: {calibratorMetricValue > 0 ? (Math.sqrt(calibratorMetricValue / 122.5)).toFixed(2) : '0.00'}s
+                  </Text>
+                  <Text style={{ color: calibratorMetricValue > 0 ? '#FACC15' : '#64748B', fontSize: 10, fontWeight: 'bold' }}>
+                    ⚡ Power: {calibratorMetricValue > 0 ? Math.round(60.7 * calibratorMetricValue + 45.3 * athlete.weight - 2055) : 0} W
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Quick Preset Selector */}
+            <Text style={{ color: '#94A3B8', fontSize: 11, fontWeight: 'bold', marginTop: 4 }}>
+              Select Trial Performance:
+            </Text>
+
+            {activeDrillCategory === 'jump' ? (
+              <View style={{ gap: 6 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <TouchableOpacity
+                    style={[styles.presetBtn, calibratorMetricValue === 0 && styles.presetBtnActiveRed]}
+                    onPress={() => setCalibratorMetricValue(0)}
+                  >
+                    <Text style={[styles.presetBtnText, calibratorMetricValue === 0 && { color: '#EF4444' }]}>❌ 0 cm (Blank)</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.presetBtn, calibratorMetricValue === 32 && styles.presetBtnActive]}
+                    onPress={() => setCalibratorMetricValue(32)}
+                  >
+                    <Text style={[styles.presetBtnText, calibratorMetricValue === 32 && { color: '#22C55E' }]}>🌱 32 cm (Rookie)</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <TouchableOpacity
+                    style={[styles.presetBtn, calibratorMetricValue === 42 && styles.presetBtnActive]}
+                    onPress={() => setCalibratorMetricValue(42)}
+                  >
+                    <Text style={[styles.presetBtnText, calibratorMetricValue === 42 && { color: '#22C55E' }]}>⚡ 42 cm (District)</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.presetBtn, calibratorMetricValue === 52 && styles.presetBtnActive]}
+                    onPress={() => setCalibratorMetricValue(52)}
+                  >
+                    <Text style={[styles.presetBtnText, calibratorMetricValue === 52 && { color: '#22C55E' }]}>🥇 52 cm (State)</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.presetBtn, calibratorMetricValue === 64 && styles.presetBtnActive]}
+                    onPress={() => setCalibratorMetricValue(64)}
+                  >
+                    <Text style={[styles.presetBtnText, calibratorMetricValue === 64 && { color: '#22C55E' }]}>👑 64 cm (SAI)</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Fine-Tuning Step Adjuster */}
+                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                  <TouchableOpacity
+                    style={styles.adjustPill}
+                    onPress={() => setCalibratorMetricValue(prev => Math.max(0, Number((prev - 5).toFixed(1))))}
+                  >
+                    <Text style={styles.adjustPillText}>-5 cm</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.adjustPill}
+                    onPress={() => setCalibratorMetricValue(prev => Math.max(0, Number((prev - 1).toFixed(1))))}
+                  >
+                    <Text style={styles.adjustPillText}>-1 cm</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.adjustPill}
+                    onPress={() => setCalibratorMetricValue(prev => Number((prev + 1).toFixed(1)))}
+                  >
+                    <Text style={styles.adjustPillText}>+1 cm</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.adjustPill}
+                    onPress={() => setCalibratorMetricValue(prev => Number((prev + 5).toFixed(1)))}
+                  >
+                    <Text style={styles.adjustPillText}>+5 cm</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : activeDrillCategory === 'sprint' ? (
+              <View style={{ gap: 6 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <TouchableOpacity
+                    style={[styles.presetBtn, calibratorMetricValue === 0 && styles.presetBtnActiveRed]}
+                    onPress={() => setCalibratorMetricValue(0)}
+                  >
+                    <Text style={[styles.presetBtnText, calibratorMetricValue === 0 && { color: '#EF4444' }]}>❌ 0 m/s (Blank)</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.presetBtn, calibratorMetricValue === 5.5 && styles.presetBtnActive]}
+                    onPress={() => setCalibratorMetricValue(5.5)}
+                  >
+                    <Text style={[styles.presetBtnText, calibratorMetricValue === 5.5 && { color: '#22C55E' }]}>🌱 5.5 m/s</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.presetBtn, calibratorMetricValue === 6.8 && styles.presetBtnActive]}
+                    onPress={() => setCalibratorMetricValue(6.8)}
+                  >
+                    <Text style={[styles.presetBtnText, calibratorMetricValue === 6.8 && { color: '#22C55E' }]}>⚡ 6.8 m/s</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.presetBtn, calibratorMetricValue === 7.8 && styles.presetBtnActive]}
+                    onPress={() => setCalibratorMetricValue(7.8)}
+                  >
+                    <Text style={[styles.presetBtnText, calibratorMetricValue === 7.8 && { color: '#22C55E' }]}>🥇 7.8 m/s</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={{ gap: 6 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <TouchableOpacity
+                    style={[styles.presetBtn, calibratorMetricValue === 0 && styles.presetBtnActiveRed]}
+                    onPress={() => setCalibratorMetricValue(0)}
+                  >
+                    <Text style={[styles.presetBtnText, calibratorMetricValue === 0 && { color: '#EF4444' }]}>❌ 0° (Blank)</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.presetBtn, calibratorMetricValue === 60 && styles.presetBtnActive]}
+                    onPress={() => setCalibratorMetricValue(60)}
+                  >
+                    <Text style={[styles.presetBtnText, calibratorMetricValue === 60 && { color: '#22C55E' }]}>🌱 60° (Half)</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.presetBtn, calibratorMetricValue === 90 && styles.presetBtnActive]}
+                    onPress={() => setCalibratorMetricValue(90)}
+                  >
+                    <Text style={[styles.presetBtnText, calibratorMetricValue === 90 && { color: '#22C55E' }]}>⚡ 90° (Parallel)</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* Action Buttons */}
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+              <TouchableOpacity
+                style={{ flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#1E293B', alignItems: 'center' }}
+                onPress={() => {
+                  setIsCalibratorModalOpen(false);
+                  Alert.alert('Trial Discarded 🧹', 'No test scores or stats were added to your card.');
+                }}
+              >
+                <Text style={{ color: '#94A3B8', fontWeight: 'bold', fontSize: 12 }}>🗑️ Discard</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{ flex: 2, paddingVertical: 12, borderRadius: 12, backgroundColor: calibratorMetricValue > 0 ? '#22C55E' : '#475569', alignItems: 'center' }}
+                onPress={handleConfirmCalibratedDrill}
+              >
+                <Text style={{ color: calibratorMetricValue > 0 ? '#000' : '#94A3B8', fontWeight: '900', fontSize: 12 }}>
+                  {calibratorMetricValue > 0 ? '✅ Confirm & Save Score' : '⚠️ No Movement (0)'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* ================= MODAL: SCOUT BIOMECHANICS REPORT ================= */}
       <Modal visible={isReportModalOpen} animationType="fade" transparent>
         <View style={styles.modalBackdrop}>
@@ -4252,6 +4457,13 @@ const styles = StyleSheet.create({
   countdownBigOverlay: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', alignItems: 'center', justifyContent: 'center' },
   recDotRow: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   redRecDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' },
+
+  presetBtn: { flex: 1, paddingVertical: 8, paddingHorizontal: 6, borderRadius: 10, backgroundColor: '#1E293B', alignItems: 'center', borderWidth: 1, borderColor: '#334155' },
+  presetBtnActive: { borderColor: '#22C55E', backgroundColor: 'rgba(34,197,94,0.15)' },
+  presetBtnActiveRed: { borderColor: '#EF4444', backgroundColor: 'rgba(239,68,68,0.15)' },
+  presetBtnText: { color: '#94A3B8', fontSize: 10, fontWeight: 'bold' },
+  adjustPill: { paddingVertical: 5, paddingHorizontal: 10, backgroundColor: '#161F36', borderRadius: 8, borderWidth: 1, borderColor: '#334155' },
+  adjustPillText: { color: '#00F0FF', fontSize: 11, fontWeight: 'bold' },
 
   reportModalBox: { width: '100%', maxWidth: 340, backgroundColor: '#0F172A', borderRadius: 22, padding: 16, borderWidth: 1, borderColor: '#1E293B', gap: 10 },
   reportScorePill: { backgroundColor: '#161F36', borderRadius: 14, padding: 10, alignItems: 'center' },
