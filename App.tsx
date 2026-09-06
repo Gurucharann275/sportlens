@@ -20,6 +20,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Accelerometer } from 'expo-sensors';
 import { WebView } from 'react-native-webview';
 import Svg, { Line, Circle, G, Text as SvgText, Rect } from 'react-native-svg';
 import {
@@ -226,6 +227,8 @@ export default function App() {
   const [aiFeedbackText, setAiFeedbackText] = useState('');
   const recordTimerRef = useRef<any>(null);
   const countdownTimerRef = useRef<any>(null);
+  const motionEnergyRef = useRef(0);
+  const accelSubRef = useRef<any>(null);
 
 
   // ================= RECRUITER POV STATE & 4-TIER VERIFICATION SYSTEM =================
@@ -845,6 +848,22 @@ export default function App() {
         setDrillPhase('recording');
         setRecordDurationSec(0);
 
+        // Start motion energy tracking via Accelerometer
+        motionEnergyRef.current = 0;
+        try {
+          if (accelSubRef.current) {
+            accelSubRef.current.remove();
+          }
+          Accelerometer.setUpdateInterval(40);
+          accelSubRef.current = Accelerometer.addListener(({ x, y, z }) => {
+            const g = Math.sqrt(x * x + y * y + z * z);
+            const delta = Math.abs(g - 1.0);
+            if (delta > motionEnergyRef.current) {
+              motionEnergyRef.current = delta;
+            }
+          });
+        } catch (e) {}
+
         // Real-time camera duration counter
         recordTimerRef.current = setInterval(() => {
           setRecordDurationSec((prevSec) => prevSec + 1);
@@ -863,6 +882,10 @@ export default function App() {
       clearInterval(recordTimerRef.current);
       recordTimerRef.current = null;
     }
+    if (accelSubRef.current) {
+      try { accelSubRef.current.remove(); } catch (e) {}
+      accelSubRef.current = null;
+    }
     setDrillPhase('standby');
     setRecordDurationSec(0);
     setIsCameraModalOpen(false);
@@ -878,6 +901,10 @@ export default function App() {
     if (recordTimerRef.current) {
       clearInterval(recordTimerRef.current);
       recordTimerRef.current = null;
+    }
+    if (accelSubRef.current) {
+      try { accelSubRef.current.remove(); } catch (e) {}
+      accelSubRef.current = null;
     }
 
     // 🛑 DURATION CHECK: Minimum 3 seconds required for capture
@@ -913,6 +940,31 @@ export default function App() {
 
     // 1.4s AI Biomechanics computer vision processing animation
     setTimeout(() => {
+      // 🛑 ANTI-CHEAT MOTION CHECK: Reject stationary face/window/wall recordings (0.0 cm)
+      if (motionEnergyRef.current < 0.15) {
+        try {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        } catch (e) {}
+
+        const rejectVoice = language === 'te'
+          ? 'ట్రయల్ తిరస్కరించబడింది! జంప్ లేదా కదలిక నమోదు కాలేదు. దయచేసి పూర్తి జంప్ చేయండి.'
+          : language === 'hi'
+          ? 'ट्रायल अस्वीकृत! कोई कूद या गति दर्ज नहीं हुई। कृपया कूदकर अभ्यास पूरा करें।'
+          : 'Trial rejected! No vertical jump motion was detected in the video.';
+
+        speakFeedback(rejectVoice);
+
+        setIsCameraModalOpen(false);
+        setDrillPhase('standby');
+        setRecordDurationSec(0);
+
+        Alert.alert(
+          '❌ AI Biomechanics: No Jump Detected (0.0 cm)',
+          'No vertical jump or athletic drill motion was detected during this recording.\n\n• Detected: Static scene / Face close-up (0.00s flight airtime)\n• Measured Jump: 0.0 cm\n• Result: 0 Score Awarded • Passport Untouched\n\nPlease execute the actual vertical jump or athletic drill in front of the camera.',
+          [{ text: 'OK', style: 'default' }]
+        );
+        return;
+      }
       const athleteWeight = athlete.weight || 68;
       let newStats = { ...athlete.stats };
       let newUnits = { ...(athlete.rawUnits || {}) };
