@@ -19,6 +19,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { WebView } from 'react-native-webview';
 import Svg, { Line, Circle, G, Text as SvgText, Rect } from 'react-native-svg';
 import {
   Ionicons,
@@ -27,6 +28,232 @@ import {
 } from '@expo/vector-icons';
 import { ALL_SPORTS, ALL_STATES, INDIA_STATES_AND_DISTRICTS } from './indiaGeoData';
 import { LANGUAGES, LanguageCode, I18N } from './i18nData';
+
+// ================= REAL-TIME GOOGLE MEDIAPIPE POSE COMPUTER VISION HTML =================
+const getMediaPipePoseHtml = (facing: 'front' | 'back') => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: -apple-system, Roboto, sans-serif; }
+    #container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #050811; }
+    video { position: absolute; width: 100%; height: 100%; object-fit: cover; ${facing === 'front' ? 'transform: scaleX(-1);' : ''} }
+    canvas { position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 2; ${facing === 'front' ? 'transform: scaleX(-1);' : ''} }
+    #loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #070B14; color: #00F0FF; font-size: 13px; font-weight: bold; z-index: 10; letter-spacing: 1px; }
+    .spinner { width: 38px; height: 38px; border: 3.5px solid rgba(0,240,255,0.2); border-top-color: #00F0FF; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="loading">
+      <div class="spinner"></div>
+      <div>⚡ INITIALIZING MEDIAPIPE AI...</div>
+      <div style="color: #64748B; font-size: 10px; margin-top: 6px;">Loading Neural Network Weights</div>
+    </div>
+    <video id="webcam" playsinline autoplay muted></video>
+    <canvas id="output_canvas"></canvas>
+  </div>
+  <script>
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('output_canvas');
+    const ctx = canvas.getContext('2d');
+    const loadingDiv = document.getElementById('loading');
+
+    const POSE_CONNECTIONS = [
+      [11, 12], // Clavicle / Shoulders
+      [11, 13], [13, 15], // Left Arm
+      [12, 14], [14, 16], // Right Arm
+      [11, 23], [12, 24], // Torso sides
+      [23, 24], // Pelvic Bar
+      [23, 25], [25, 27], [27, 29], [29, 31], // Left Leg & Foot
+      [24, 26], [26, 28], [28, 30], [30, 32], // Right Leg & Foot
+      [0, 1], [1, 2], [2, 3], [3, 7], [0, 4], [4, 5], [5, 6], [6, 8] // Face
+    ];
+
+    function calculateAngle(a, b, c) {
+      if (!a || !b || !c) return 180;
+      const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+      let angle = Math.abs(radians * 180.0 / Math.PI);
+      if (angle > 180.0) angle = 360.0 - angle;
+      return Math.round(angle);
+    }
+
+    let lastPost = 0;
+    let baselineHipY = null;
+    let minHipY = 1.0;
+    let isJumping = false;
+    let jumpStart = 0;
+
+    function onResults(results) {
+      if (loadingDiv.style.display !== 'none') {
+        loadingDiv.style.display = 'none';
+      }
+
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const landmarks = results.poseLandmarks;
+      const isDetected = landmarks && landmarks.length >= 29 && 
+        ((landmarks[11] && landmarks[11].visibility > 0.45) || (landmarks[12] && landmarks[12].visibility > 0.45));
+
+      if (isDetected) {
+        // LAYER 1: OUTER NEON GLOW AURA FOR ALL LIMBS
+        ctx.lineWidth = 12;
+        ctx.strokeStyle = 'rgba(0, 255, 102, 0.45)';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        for (const [i, j] of POSE_CONNECTIONS) {
+          const p1 = landmarks[i];
+          const p2 = landmarks[j];
+          if (p1 && p2 && p1.visibility > 0.35 && p2.visibility > 0.35) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
+            ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
+            ctx.stroke();
+          }
+        }
+
+        // LAYER 2: SHARP BRIGHT CORE LASER STICKS
+        ctx.lineWidth = 4.5;
+        ctx.strokeStyle = '#00FF66';
+        for (const [i, j] of POSE_CONNECTIONS) {
+          const p1 = landmarks[i];
+          const p2 = landmarks[j];
+          if (p1 && p2 && p1.visibility > 0.35 && p2.visibility > 0.35) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
+            ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
+            ctx.stroke();
+          }
+        }
+
+        // CYAN KEYPOINT NODES (14 Pivot Joints)
+        const KEY_POINTS = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+        for (const idx of KEY_POINTS) {
+          const pt = landmarks[idx];
+          if (pt && pt.visibility > 0.35) {
+            const x = pt.x * canvas.width;
+            const y = pt.y * canvas.height;
+            // Cyan halo
+            ctx.beginPath();
+            ctx.arc(x, y, 7, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.55)';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#00F0FF';
+            ctx.stroke();
+
+            // White center pip
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fill();
+          }
+        }
+
+        // KINEMATICS & ANGLES
+        const kneeL = calculateAngle(landmarks[23], landmarks[25], landmarks[27]);
+        const hipL = calculateAngle(landmarks[11], landmarks[23], landmarks[25]);
+        const spineAngle = Math.round(90 - Math.abs((landmarks[11].x - landmarks[23].x) * 50));
+
+        // JUMP / SQUAT RECOGNITION
+        const hipY = (landmarks[23].y + landmarks[24].y) / 2;
+        if (baselineHipY === null) baselineHipY = hipY;
+
+        let detectedBurst = null;
+        if (hipY < baselineHipY - 0.08 && !isJumping) {
+          isJumping = true;
+          jumpStart = Date.now();
+          minHipY = hipY;
+        } else if (isJumping) {
+          if (hipY < minHipY) minHipY = hipY;
+          if (hipY >= baselineHipY - 0.02) {
+            isJumping = false;
+            const flightSec = (Date.now() - jumpStart) / 1000;
+            const jumpCm = Math.round(122.5 * flightSec * flightSec);
+            if (jumpCm >= 15 && jumpCm <= 120) {
+              detectedBurst = { jumpCm, flightSec: flightSec.toFixed(2) };
+            }
+          }
+        }
+
+        // Post to React Native
+        const now = Date.now();
+        if (now - lastPost > 60 || detectedBurst) {
+          lastPost = now;
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'POSE_UPDATE',
+              detected: true,
+              kneeAngle: kneeL + '°',
+              hipAngle: hipL + '°',
+              torsoAngle: spineAngle + '°',
+              burst: detectedBurst
+            }));
+          }
+        }
+      } else {
+        // Empty frame / zero humans detected
+        const now = Date.now();
+        if (now - lastPost > 180) {
+          lastPost = now;
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'POSE_UPDATE',
+              detected: false
+            }));
+          }
+        }
+      }
+      ctx.restore();
+    }
+
+    const pose = new Pose({
+      locateFile: (file) => 'https://cdn.jsdelivr.net/npm/@mediapipe/pose/' + file
+    });
+    pose.setOptions({
+      modelComplexity: 0,
+      smoothLandmarks: true,
+      enableSegmentation: false,
+      minDetectionConfidence: 0.48,
+      minTrackingConfidence: 0.48
+    });
+    pose.onResults(onResults);
+
+    navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: '${facing === 'front' ? 'user' : 'environment'}',
+        width: { ideal: 640 },
+        height: { ideal: 480 }
+      },
+      audio: false
+    }).then((stream) => {
+      video.srcObject = stream;
+      video.play();
+      const camera = new Camera(video, {
+        onFrame: async () => {
+          await pose.send({ image: video });
+        },
+        width: 640,
+        height: 480
+      });
+      camera.start();
+    }).catch((e) => {
+      loadingDiv.innerHTML = '<div style="color:#EF4444;text-align:center;padding:20px;">⚠️ CAMERA ACCESS REQUIRED<br><span style="font-size:10px;color:#94A3B8;">Please grant camera permissions to enable AI pose tracking</span></div>';
+    });
+  </script>
+</body>
+</html>
+`;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -215,7 +442,7 @@ export default function App() {
   const [calculatedScore, setCalculatedScore] = useState(0);
   const [calibratedAttributesList, setCalibratedAttributesList] = useState<string[]>([]);
   const [aiFeedbackText, setAiFeedbackText] = useState('');
-  const [liveJointAngles, setLiveJointAngles] = useState({ knee: '92.4°', hip: '108.4°', force: '1,420 N', symmetry: '98.6%' });
+  const [liveJointAngles, setLiveJointAngles] = useState({ knee: '92.4°', hip: '108.4°', torso: '88.5°', force: '1,420 N', symmetry: '98.6%' });
   const recordTimerRef = useRef<any>(null);
   const countdownTimerRef = useRef<any>(null);
   const [liveKinematicTick, setLiveKinematicTick] = useState(0);
@@ -943,6 +1170,7 @@ export default function App() {
     setLiveJointAngles({
       knee: '175.2° (Standing)',
       hip: '178.0°',
+      torso: '90.0°',
       force: '0 N',
       symmetry: '100%',
     });
@@ -997,6 +1225,7 @@ export default function App() {
       setLiveJointAngles({
         knee: '92.4° (Flexion)',
         hip: '108.4°',
+        torso: '84.0°',
         force: `${Math.round(1350 + val * 12)} N`,
         symmetry: `${Number((97 + Math.random() * 2.8).toFixed(1))}%`,
       });
@@ -1006,6 +1235,7 @@ export default function App() {
       setLiveJointAngles({
         knee: '112.0° (Stride)',
         hip: '124.0°',
+        torso: '78.0°',
         force: `${Math.round(1400 + val * 20)} N`,
         symmetry: `${Number((98 + Math.random() * 1.8).toFixed(1))}%`,
       });
@@ -1015,6 +1245,7 @@ export default function App() {
       setLiveJointAngles({
         knee: `${val}° (Depth)`,
         hip: '94.0°',
+        torso: '82.0°',
         force: '1,520 N',
         symmetry: '99.2%',
       });
@@ -3311,32 +3542,54 @@ export default function App() {
             </View>
 
             <View style={[styles.viewfinderArea, { backgroundColor: '#050811', overflow: 'hidden' }]}>
-              {cameraPermission?.granted ? (
-                <CameraView style={StyleSheet.absoluteFill} facing={cameraFacing} />
-              ) : (
-                <View style={{ alignItems: 'center', padding: 20 }}>
-                  <Ionicons name="camera" color="#64748B" size={48} />
-                  <Text style={{ color: '#94A3B8', marginTop: 8, textAlign: 'center', fontSize: 12 }}>
-                    Camera access required for AI pose tracking
-                  </Text>
-                  <TouchableOpacity
-                    style={[styles.primaryBtn, { marginTop: 12, paddingHorizontal: 16 }]}
-                    onPress={requestCameraPermission}
-                  >
-                    <Text style={styles.primaryBtnText}>Grant Camera Access</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+              {/* REAL-TIME GOOGLE MEDIAPIPE COMPUTER VISION CAMERA PIPELINE */}
+              <WebView
+                originWhitelist={['*']}
+                source={{ html: getMediaPipePoseHtml(cameraFacing) }}
+                style={StyleSheet.absoluteFill}
+                allowsInlineMediaPlayback={true}
+                mediaPlaybackRequiresUserAction={false}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                scrollEnabled={false}
+                onMessage={(event) => {
+                  try {
+                    const data = JSON.parse(event.nativeEvent.data);
+                    if (data.type === 'POSE_UPDATE') {
+                      if (data.detected !== isAthleteInFrame) {
+                        setIsAthleteInFrame(data.detected);
+                        if (data.detected) {
+                          try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch (e) {}
+                        }
+                      }
+                      if (data.detected) {
+                        setLiveJointAngles(prev => ({
+                          ...prev,
+                          knee: data.kneeAngle || prev.knee,
+                          hip: data.hipAngle || prev.hip,
+                          torso: data.torsoAngle || prev.torso,
+                          symmetry: '98.8%',
+                        }));
+                        if (data.burst && data.burst.jumpCm) {
+                          setLiveMetricDisplay(data.burst.jumpCm);
+                          setDetectedReps(prev => prev + 1);
+                          try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e) {}
+                        }
+                      }
+                    }
+                  } catch (e) {}
+                }}
+              />
 
               {/* Sci-Fi HUD Corner Brackets */}
-              <View style={{ position: 'absolute', top: 10, left: 10, width: 24, height: 24, borderTopWidth: 3, borderLeftWidth: 3, borderColor: isAthleteInFrame ? '#00F0FF' : '#F59E0B' }} />
-              <View style={{ position: 'absolute', top: 10, right: 10, width: 24, height: 24, borderTopWidth: 3, borderRightWidth: 3, borderColor: isAthleteInFrame ? '#00F0FF' : '#F59E0B' }} />
-              <View style={{ position: 'absolute', bottom: 10, left: 10, width: 24, height: 24, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: isAthleteInFrame ? '#22C55E' : '#64748B' }} />
-              <View style={{ position: 'absolute', bottom: 10, right: 10, width: 24, height: 24, borderBottomWidth: 3, borderRightWidth: 3, borderColor: isAthleteInFrame ? '#22C55E' : '#64748B' }} />
+              <View pointerEvents="none" style={{ position: 'absolute', top: 10, left: 10, width: 24, height: 24, borderTopWidth: 3, borderLeftWidth: 3, borderColor: isAthleteInFrame ? '#00F0FF' : '#F59E0B' }} />
+              <View pointerEvents="none" style={{ position: 'absolute', top: 10, right: 10, width: 24, height: 24, borderTopWidth: 3, borderRightWidth: 3, borderColor: isAthleteInFrame ? '#00F0FF' : '#F59E0B' }} />
+              <View pointerEvents="none" style={{ position: 'absolute', bottom: 10, left: 10, width: 24, height: 24, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: isAthleteInFrame ? '#22C55E' : '#64748B' }} />
+              <View pointerEvents="none" style={{ position: 'absolute', bottom: 10, right: 10, width: 24, height: 24, borderBottomWidth: 3, borderRightWidth: 3, borderColor: isAthleteInFrame ? '#22C55E' : '#64748B' }} />
 
               {/* 1. COUNTDOWN 3-2-1 GLOWING HUD */}
               {drillPhase === 'countdown' && (
-                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
+                <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
                   <View style={{ width: 130, height: 130, borderRadius: 65, borderWidth: 4, borderColor: '#00F0FF', backgroundColor: 'rgba(0,240,255,0.15)', justifyContent: 'center', alignItems: 'center', shadowColor: '#00F0FF', shadowRadius: 20, shadowOpacity: 0.8 }}>
                     <Text style={{ color: '#FFF', fontSize: 60, fontWeight: '900' }}>
                       {countdownNumber > 0 ? countdownNumber : '🔥'}
@@ -3351,207 +3604,29 @@ export default function App() {
                 </View>
               )}
 
-              {/* 2. CASE A: NO PERSON IN FRAME -> SHOW SEARCHING SCANNER (NO GREEN SKELETON) */}
-              {!isAthleteInFrame && (
-                <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-                  {/* Subtle Translucent Target Silhouette */}
-                  <View style={{ width: 180, height: 280, borderRadius: 24, borderWidth: 1.5, borderColor: 'rgba(245, 158, 11, 0.35)', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(245, 158, 11, 0.04)' }}>
-                    <Ionicons name="body-outline" size={72} color="rgba(245, 158, 11, 0.3)" />
-                    <Text style={{ color: '#F59E0B', fontSize: 11, fontWeight: '900', marginTop: 10, letterSpacing: 1 }}>
-                      🔍 SCANNING FOR ATHLETE
-                    </Text>
-                    <Text style={{ color: '#94A3B8', fontSize: 9.5, textAlign: 'center', marginTop: 4, paddingHorizontal: 12 }}>
-                      Step into frame (6–8 ft away) or tap screen
-                    </Text>
-                  </View>
+              {/* 2. REAL-TIME AI SCANNER STATUS BADGES */}
+              <View pointerEvents="none" style={{ position: 'absolute', top: 10, left: 0, right: 0, alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, borderWidth: 1.5, borderColor: isAthleteInFrame ? '#22C55E' : '#F59E0B' }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: isAthleteInFrame ? '#22C55E' : '#F59E0B' }} />
+                  <Text style={{ color: isAthleteInFrame ? '#22C55E' : '#F59E0B', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>
+                    {isAthleteInFrame ? '🟢 MEDIAPIPE AI: ATHLETE LOCKED (33 PTS)' : '🟡 AI SCANNER: 0 ATHLETES DETECTED'}
+                  </Text>
+                </View>
 
-                  {/* Top Searching Status Badge */}
-                  <View style={{ position: 'absolute', top: 10, alignItems: 'center' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, borderWidth: 1.5, borderColor: '#F59E0B' }}>
-                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F59E0B' }} />
-                      <Text style={{ color: '#F59E0B', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>
-                        🟡 AI SCANNER: 0 ATHLETES DETECTED
-                      </Text>
+                {isAthleteInFrame && (
+                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
+                    <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#00F0FF' }}>
+                      <Text style={{ color: '#00F0FF', fontSize: 8.5, fontWeight: 'bold' }}>📐 HIP: {liveJointAngles.hip}</Text>
+                    </View>
+                    <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#22C55E' }}>
+                      <Text style={{ color: '#22C55E', fontSize: 8.5, fontWeight: 'bold' }}>🦵 KNEE: {liveJointAngles.knee}</Text>
+                    </View>
+                    <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#FACC15' }}>
+                      <Text style={{ color: '#FACC15', fontSize: 8.5, fontWeight: 'bold' }}>⚡ TORSO: {(liveJointAngles as any).torso || '90°'}</Text>
                     </View>
                   </View>
-                </View>
-              )}
-
-              {/* 3. CASE B: PERSON DETECTED -> RENDER DYNAMIC GREEN SKELETON LIMBS */}
-              {isAthleteInFrame && (
-                <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-                  {(() => {
-                    const poseData = getLiveDynamicSkeleton(liveKinematicTick, drillPhase, activeDrillCategory);
-                    const limbs = [
-                      // Head to Neck
-                      { x1: poseData.head.x, y1: poseData.head.y + 18, x2: poseData.neck.x, y2: poseData.neck.y },
-                      // Clavicle / Shoulder Beam
-                      { x1: poseData.leftShoulder.x, y1: poseData.leftShoulder.y, x2: poseData.rightShoulder.x, y2: poseData.rightShoulder.y },
-                      // Torso Spine Column (Neck -> Mid-Spine -> Pelvis)
-                      { x1: poseData.neck.x, y1: poseData.neck.y, x2: poseData.midSpine.x, y2: poseData.midSpine.y },
-                      { x1: poseData.midSpine.x, y1: poseData.midSpine.y, x2: poseData.pelvis.x, y2: poseData.pelvis.y },
-                      // Pelvic Bar
-                      { x1: poseData.leftHip.x, y1: poseData.leftHip.y, x2: poseData.rightHip.x, y2: poseData.rightHip.y },
-                      // LEFT ARM (Shoulder -> Elbow -> Wrist)
-                      { x1: poseData.leftShoulder.x, y1: poseData.leftShoulder.y, x2: poseData.leftElbow.x, y2: poseData.leftElbow.y },
-                      { x1: poseData.leftElbow.x, y1: poseData.leftElbow.y, x2: poseData.leftWrist.x, y2: poseData.leftWrist.y },
-                      // RIGHT ARM (Shoulder -> Elbow -> Wrist)
-                      { x1: poseData.rightShoulder.x, y1: poseData.rightShoulder.y, x2: poseData.rightElbow.x, y2: poseData.rightElbow.y },
-                      { x1: poseData.rightElbow.x, y1: poseData.rightElbow.y, x2: poseData.rightWrist.x, y2: poseData.rightWrist.y },
-                      // LEFT LEG (Hip -> Knee -> Ankle -> Foot)
-                      { x1: poseData.leftHip.x, y1: poseData.leftHip.y, x2: poseData.leftKnee.x, y2: poseData.leftKnee.y },
-                      { x1: poseData.leftKnee.x, y1: poseData.leftKnee.y, x2: poseData.leftAnkle.x, y2: poseData.leftAnkle.y },
-                      { x1: poseData.leftAnkle.x, y1: poseData.leftAnkle.y, x2: poseData.leftFoot.x, y2: poseData.leftFoot.y },
-                      // RIGHT LEG (Hip -> Knee -> Ankle -> Foot)
-                      { x1: poseData.rightHip.x, y1: poseData.rightHip.y, x2: poseData.rightKnee.x, y2: poseData.rightKnee.y },
-                      { x1: poseData.rightKnee.x, y1: poseData.rightKnee.y, x2: poseData.rightAnkle.x, y2: poseData.rightAnkle.y },
-                      { x1: poseData.rightAnkle.x, y1: poseData.rightAnkle.y, x2: poseData.rightFoot.x, y2: poseData.rightFoot.y },
-                    ];
-
-                    const jointNodes = [
-                      poseData.leftShoulder,
-                      poseData.rightShoulder,
-                      poseData.leftElbow,
-                      poseData.rightElbow,
-                      poseData.leftWrist,
-                      poseData.rightWrist,
-                      poseData.midSpine,
-                      poseData.pelvis,
-                      poseData.leftHip,
-                      poseData.rightHip,
-                      poseData.leftKnee,
-                      poseData.rightKnee,
-                      poseData.leftAnkle,
-                      poseData.rightAnkle,
-                    ];
-
-                    return (
-                      <>
-                        <Svg width="100%" height="100%" viewBox="0 0 320 480" style={StyleSheet.absoluteFill}>
-                          {/* 1. LAYER 1: OUTER NEON GLOW AURA FOR ALL LIMBS */}
-                          {limbs.map((line, idx) => (
-                            <Line
-                              key={`glow-${idx}`}
-                              x1={line.x1}
-                              y1={line.y1}
-                              x2={line.x2}
-                              y2={line.y2}
-                              stroke="rgba(34, 197, 94, 0.35)"
-                              strokeWidth={10}
-                              strokeLinecap="round"
-                            />
-                          ))}
-
-                          {/* 2. LAYER 2: SHARP CORE GREEN STICKS FOR ALL LIMBS */}
-                          {limbs.map((line, idx) => (
-                            <Line
-                              key={`core-${idx}`}
-                              x1={line.x1}
-                              y1={line.y1}
-                              x2={line.x2}
-                              y2={line.y2}
-                              stroke="#22C55E"
-                              strokeWidth={4.5}
-                              strokeLinecap="round"
-                            />
-                          ))}
-
-                          {/* Head Cranial Outer Ring with Glow */}
-                          <Circle
-                            cx={poseData.head.x}
-                            cy={poseData.head.y}
-                            r={18}
-                            stroke="rgba(34, 197, 94, 0.4)"
-                            strokeWidth={8}
-                            fill="none"
-                          />
-                          <Circle
-                            cx={poseData.head.x}
-                            cy={poseData.head.y}
-                            r={18}
-                            stroke="#22C55E"
-                            strokeWidth={3}
-                            fill="rgba(34, 197, 94, 0.2)"
-                          />
-                          {/* Cranial Reticle Crosshairs */}
-                          <Line
-                            x1={poseData.head.x - 24}
-                            y1={poseData.head.y}
-                            x2={poseData.head.x - 18}
-                            y2={poseData.head.y}
-                            stroke="#00F0FF"
-                            strokeWidth={2}
-                          />
-                          <Line
-                            x1={poseData.head.x + 18}
-                            y1={poseData.head.y}
-                            x2={poseData.head.x + 24}
-                            y2={poseData.head.y}
-                            stroke="#00F0FF"
-                            strokeWidth={2}
-                          />
-                          <Line
-                            x1={poseData.head.x}
-                            y1={poseData.head.y - 24}
-                            x2={poseData.head.x}
-                            y2={poseData.head.y - 18}
-                            stroke="#00F0FF"
-                            strokeWidth={2}
-                          />
-                          <Circle
-                            cx={poseData.head.x}
-                            cy={poseData.head.y}
-                            r={4}
-                            fill="#00F0FF"
-                          />
-
-                          {/* 3. LAYER 3: 14 PULSING CYAN JOINT SENSORS WITH WHITE CORE */}
-                          {jointNodes.map((pt, idx) => (
-                            <G key={`joint-${idx}`}>
-                              <Circle
-                                cx={pt.x}
-                                cy={pt.y}
-                                r={7}
-                                fill="rgba(0, 240, 255, 0.45)"
-                                stroke="#00F0FF"
-                                strokeWidth={1.8}
-                              />
-                              <Circle
-                                cx={pt.x}
-                                cy={pt.y}
-                                r={3}
-                                fill="#FFFFFF"
-                              />
-                            </G>
-                          ))}
-                        </Svg>
-
-                        {/* Floating HUD Badges */}
-                        <View style={{ position: 'absolute', top: 10, alignItems: 'center' }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, borderWidth: 1.5, borderColor: '#22C55E' }}>
-                            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#22C55E' }} />
-                            <Text style={{ color: '#22C55E', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>
-                              🟢 4 LIMBS + TORSO AI TRACKING (LOCKED)
-                            </Text>
-                          </View>
-
-                          <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
-                            <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#00F0FF' }}>
-                              <Text style={{ color: '#00F0FF', fontSize: 8.5, fontWeight: 'bold' }}>📐 HIP: {poseData.hipAngle}</Text>
-                            </View>
-                            <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#22C55E' }}>
-                              <Text style={{ color: '#22C55E', fontSize: 8.5, fontWeight: 'bold' }}>🦵 KNEE: {poseData.kneeAngle}</Text>
-                            </View>
-                            <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#FACC15' }}>
-                              <Text style={{ color: '#FACC15', fontSize: 8.5, fontWeight: 'bold' }}>⚡ TORSO: {poseData.torsoAngle}</Text>
-                            </View>
-                          </View>
-                        </View>
-                      </>
-                    );
-                  })()}
-                </View>
-              )}
+                )}
+              </View>
 
               <Text style={styles.viewfinderGuide}>
                 {drillPhase === 'recording'
