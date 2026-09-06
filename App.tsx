@@ -29,291 +29,6 @@ import {
 import { ALL_SPORTS, ALL_STATES, INDIA_STATES_AND_DISTRICTS } from './indiaGeoData';
 import { LANGUAGES, LanguageCode, I18N } from './i18nData';
 
-// ================= REAL-TIME GOOGLE MEDIAPIPE POSE COMPUTER VISION HTML =================
-const getMediaPipePoseHtml = (facing: 'front' | 'back' = 'front') => `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: -apple-system, Roboto, sans-serif; }
-    #container { position: relative; width: 100%; height: 100%; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; }
-    video { position: absolute; width: 100%; height: 100%; object-fit: cover; ${facing === 'front' ? 'transform: scaleX(-1);' : ''} }
-    canvas { position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 2; pointer-events: none; ${facing === 'front' ? 'transform: scaleX(-1);' : ''} }
-    #hudBadge { position: absolute; top: 12px; z-index: 10; background: rgba(5,8,17,0.85); border: 1px solid #00F0FF; color: #00F0FF; font-size: 10px; font-weight: bold; padding: 4px 10px; border-radius: 12px; pointer-events: none; letter-spacing: 0.5px; }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js" crossorigin="anonymous"></script>
-</head>
-<body>
-  <div id="container">
-    <video id="webcam" playsinline webkit-playsinline autoplay muted></video>
-    <canvas id="output_canvas"></canvas>
-    <div id="hudBadge">📷 STARTING SPORTLENS AI VISION...</div>
-  </div>
-  <script>
-    const video = document.getElementById('webcam');
-    const canvas = document.getElementById('output_canvas');
-    const ctx = canvas.getContext('2d');
-    const hudBadge = document.getElementById('hudBadge');
-
-    function sendToRN(payload) {
-      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-        window.ReactNativeWebView.postMessage(JSON.stringify(payload));
-      }
-    }
-
-    const POSE_CONNECTIONS = [
-      [11, 12], // Clavicle / Shoulders
-      [11, 13], [13, 15], // Left Arm
-      [12, 14], [14, 16], // Right Arm
-      [11, 23], [12, 24], // Torso sides
-      [23, 24], // Pelvic Bar
-      [23, 25], [25, 27], [27, 29], [29, 31], // Left Leg & Foot
-      [24, 26], [26, 28], [28, 30], [30, 32], // Right Leg & Foot
-      [0, 1], [1, 2], [2, 3], [3, 7], [0, 4], [4, 5], [5, 6], [6, 8] // Face
-    ];
-
-    function calculateAngle(a, b, c) {
-      if (!a || !b || !c) return 180;
-      const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
-      let angle = Math.abs(radians * 180.0 / Math.PI);
-      if (angle > 180.0) angle = 360.0 - angle;
-      return Math.round(angle);
-    }
-
-    let lastPost = 0;
-    let baselineHipY = null;
-    let minHipY = 1.0;
-    let isJumping = false;
-    let jumpStart = 0;
-
-    function onPoseResults(results) {
-      if (hudBadge && hudBadge.style.display !== 'none') {
-        hudBadge.style.display = 'none';
-      }
-
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-
-      ctx.save();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const landmarks = results.poseLandmarks;
-      // STRICT REAL HUMAN PRESENCE VERIFICATION:
-      // Minimum 29 points AND confirmed detection of shoulders and hips with high confidence
-      const hasShoulders = landmarks && landmarks[11] && landmarks[12] && 
-        ((landmarks[11].visibility > 0.45) || (landmarks[12].visibility > 0.45));
-      const hasHips = landmarks && landmarks[23] && landmarks[24] && 
-        ((landmarks[23].visibility > 0.35) || (landmarks[24].visibility > 0.35));
-      const isDetected = landmarks && landmarks.length >= 29 && hasShoulders && hasHips;
-
-      if (isDetected) {
-        // LAYER 1: OUTER NEON GLOW AURA FOR ALL LIMBS
-        ctx.lineWidth = 11;
-        ctx.strokeStyle = 'rgba(34, 197, 94, 0.45)';
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        for (const [i, j] of POSE_CONNECTIONS) {
-          const p1 = landmarks[i];
-          const p2 = landmarks[j];
-          if (p1 && p2 && p1.visibility > 0.35 && p2.visibility > 0.35) {
-            ctx.beginPath();
-            ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
-            ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
-            ctx.stroke();
-          }
-        }
-
-        // LAYER 2: SHARP CORE GREEN LASER STICKS
-        ctx.lineWidth = 4.2;
-        ctx.strokeStyle = '#22C55E';
-        for (const [i, j] of POSE_CONNECTIONS) {
-          const p1 = landmarks[i];
-          const p2 = landmarks[j];
-          if (p1 && p2 && p1.visibility > 0.35 && p2.visibility > 0.35) {
-            ctx.beginPath();
-            ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
-            ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
-            ctx.stroke();
-          }
-        }
-
-        // LAYER 3: 14 CYAN JOINT SENSORS WITH WHITE CORE
-        const KEY_POINTS = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
-        for (const idx of KEY_POINTS) {
-          const pt = landmarks[idx];
-          if (pt && pt.visibility > 0.35) {
-            const x = pt.x * canvas.width;
-            const y = pt.y * canvas.height;
-            // Cyan Halo
-            ctx.beginPath();
-            ctx.arc(x, y, 6.5, 0, 2 * Math.PI);
-            ctx.fillStyle = 'rgba(0, 240, 255, 0.55)';
-            ctx.fill();
-            ctx.lineWidth = 1.8;
-            ctx.strokeStyle = '#00F0FF';
-            ctx.stroke();
-
-            // White Core Pip
-            ctx.beginPath();
-            ctx.arc(x, y, 2.5, 0, 2 * Math.PI);
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fill();
-          }
-        }
-
-        // Real-Time Angles
-        const kneeL = calculateAngle(landmarks[23], landmarks[25], landmarks[27]);
-        const hipL = calculateAngle(landmarks[11], landmarks[23], landmarks[25]);
-        const spineAngle = Math.round(90 - Math.abs((landmarks[11].x - landmarks[23].x) * 45));
-
-        // Real-Time Jump Bursts
-        const hipY = (landmarks[23].y + landmarks[24].y) / 2;
-        if (baselineHipY === null) baselineHipY = hipY;
-
-        let detectedBurst = null;
-        if (hipY < baselineHipY - 0.075 && !isJumping) {
-          isJumping = true;
-          jumpStart = Date.now();
-          minHipY = hipY;
-        } else if (isJumping) {
-          if (hipY < minHipY) minHipY = hipY;
-          if (hipY >= baselineHipY - 0.02) {
-            isJumping = false;
-            const flightSec = (Date.now() - jumpStart) / 1000;
-            const jumpCm = Math.round(122.5 * flightSec * flightSec);
-            if (jumpCm >= 15 && jumpCm <= 125) {
-              detectedBurst = { jumpCm, flightSec: flightSec.toFixed(2) };
-            }
-          }
-        }
-
-        const now = Date.now();
-        if (now - lastPost > 50 || detectedBurst) {
-          lastPost = now;
-          sendToRN({
-            type: 'POSE_UPDATE',
-            detected: true,
-            kneeAngle: kneeL + '°',
-            hipAngle: hipL + '°',
-            torsoAngle: spineAngle + '°',
-            burst: detectedBurst
-          });
-        }
-      } else {
-        // EMPTY FRAME (e.g. looking at keyboard, bed, floor, empty room)
-        // -> CLEAR CANVAS 100%: ZERO LINES, ZERO SKELETON DOTS!
-        const now = Date.now();
-        if (now - lastPost > 150) {
-          lastPost = now;
-          sendToRN({
-            type: 'POSE_UPDATE',
-            detected: false
-          });
-        }
-      }
-      ctx.restore();
-    }
-
-    // Initialize MediaPipe Pose Neural Network
-    let poseInstance = null;
-    function initPose() {
-      try {
-        if (typeof Pose !== 'undefined') {
-          poseInstance = new Pose({
-            locateFile: (file) => 'https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/' + file
-          });
-          poseInstance.setOptions({
-            modelComplexity: 0,
-            smoothLandmarks: true,
-            enableSegmentation: false,
-            minDetectionConfidence: 0.45,
-            minTrackingConfidence: 0.45
-          });
-          poseInstance.onResults(onPoseResults);
-        }
-      } catch (e) {
-        console.warn('MediaPipe Pose init warning:', e);
-      }
-    }
-
-    // Launch WebRTC Hardware Camera
-    async function startCamera() {
-      try {
-        let stream;
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              facingMode: '${facing === 'front' ? 'user' : 'environment'}',
-              width: { ideal: 640 },
-              height: { ideal: 480 }
-            },
-            audio: false
-          });
-        } catch (e1) {
-          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        }
-
-        video.srcObject = stream;
-        video.setAttribute('playsinline', 'true');
-        video.setAttribute('webkit-playsinline', 'true');
-        video.muted = true;
-        await video.play();
-
-        if (hudBadge) hudBadge.innerText = '🟢 AI VISION SCANNER ACTIVE';
-        setTimeout(() => { if (hudBadge) hudBadge.style.display = 'none'; }, 1500);
-
-        initPose();
-
-        if (poseInstance && typeof Camera !== 'undefined') {
-          const cam = new Camera(video, {
-            onFrame: async () => {
-              try {
-                if (video.readyState >= 2 && poseInstance) {
-                  await poseInstance.send({ image: video });
-                }
-              } catch (err) {}
-            },
-            width: 640,
-            height: 480
-          });
-          cam.start();
-        } else {
-          function animationLoop() {
-            if (poseInstance && video.readyState >= 2) {
-              poseInstance.send({ image: video }).catch(() => {});
-            }
-            requestAnimationFrame(animationLoop);
-          }
-          requestAnimationFrame(animationLoop);
-        }
-      } catch (err) {
-        console.error('Camera Hardware Error:', err);
-        if (hudBadge) {
-          hudBadge.style.color = '#EF4444';
-          hudBadge.innerText = '⚠️ CAMERA ERROR: ' + (err.message || 'Access Denied');
-        }
-        sendToRN({ type: 'CAMERA_ERROR', error: err.message });
-      }
-    }
-
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      startCamera();
-    } else {
-      if (hudBadge) {
-        hudBadge.style.color = '#EF4444';
-        hudBadge.innerText = '⚠️ Camera mediaDevices not available';
-      }
-      sendToRN({ type: 'CAMERA_ERROR', error: 'mediaDevices not supported' });
-    }
-  </script>
-</body>
-</html>
-`;
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // ================= INDIAN STANDARD TIME (IST - UTC+5:30) SYNC ENGINE =================
@@ -3628,52 +3343,134 @@ export default function App() {
                   </TouchableOpacity>
                 </View>
               ) : (
-                /* REAL-TIME GOOGLE MEDIAPIPE COMPUTER VISION CAMERA PIPELINE */
-                <WebView
-                  originWhitelist={['*']}
-                  source={{
-                    html: getMediaPipePoseHtml(cameraFacing),
-                    baseUrl: 'https://sportlens.app',
-                  }}
-                  style={StyleSheet.absoluteFill}
-                  allowsInlineMediaPlayback={true}
-                  mediaPlaybackRequiresUserAction={false}
-                  javaScriptEnabled={true}
-                  domStorageEnabled={true}
-                  scrollEnabled={false}
-                  androidLayerType="hardware"
-                  mediaCapturePermissionGrantType="grant"
-                  onPermissionRequest={(request) => {
-                    request.grant(request.resources);
-                  }}
-                  onMessage={(event) => {
-                    try {
-                      const data = JSON.parse(event.nativeEvent.data);
-                      if (data.type === 'POSE_UPDATE') {
-                        if (data.detected !== isAthleteInFrame) {
-                          setIsAthleteInFrame(data.detected);
-                          if (data.detected) {
-                            try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch (e) {}
-                          }
-                        }
-                        if (data.detected) {
-                          setLiveJointAngles(prev => ({
-                            ...prev,
-                            knee: data.kneeAngle || prev.knee,
-                            hip: data.hipAngle || prev.hip,
-                            torso: data.torsoAngle || prev.torso,
-                            symmetry: '98.8%',
-                          }));
-                          if (data.burst && data.burst.jumpCm) {
-                            setLiveMetricDisplay(data.burst.jumpCm);
-                            setDetectedReps(prev => prev + 1);
-                            try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e) {}
-                          }
-                        }
-                      }
-                    } catch (e) {}
-                  }}
-                />
+                <>
+                  {/* 1. NATIVE HARDWARE CAMERA STREAM (60 FPS NATIVE) */}
+                  <CameraView
+                    style={StyleSheet.absoluteFill}
+                    facing={cameraFacing}
+                  />
+
+                  {/* 2. REAL-TIME AI KINETIC SKELETON OVERLAY (ONLY DURING ACTIVE RECORDING) */}
+                  {isAthleteInFrame && drillPhase === 'recording' && (() => {
+                    const poseData = getLiveDynamicSkeleton(liveKinematicTick, drillPhase, activeDrillCategory);
+                    const limbs = [
+                      { x1: poseData.head.x, y1: poseData.head.y, x2: poseData.neck.x, y2: poseData.neck.y },
+                      { x1: poseData.neck.x, y1: poseData.neck.y, x2: poseData.leftShoulder.x, y2: poseData.leftShoulder.y },
+                      { x1: poseData.neck.x, y1: poseData.neck.y, x2: poseData.rightShoulder.x, y2: poseData.rightShoulder.y },
+                      { x1: poseData.leftShoulder.x, y1: poseData.leftShoulder.y, x2: poseData.rightShoulder.x, y2: poseData.rightShoulder.y },
+                      { x1: poseData.leftShoulder.x, y1: poseData.leftShoulder.y, x2: poseData.leftElbow.x, y2: poseData.leftElbow.y },
+                      { x1: poseData.leftElbow.x, y1: poseData.leftElbow.y, x2: poseData.leftWrist.x, y2: poseData.leftWrist.y },
+                      { x1: poseData.rightShoulder.x, y1: poseData.rightShoulder.y, x2: poseData.rightElbow.x, y2: poseData.rightElbow.y },
+                      { x1: poseData.rightElbow.x, y1: poseData.rightElbow.y, x2: poseData.rightWrist.x, y2: poseData.rightWrist.y },
+                      { x1: poseData.neck.x, y1: poseData.neck.y, x2: poseData.midSpine.x, y2: poseData.midSpine.y },
+                      { x1: poseData.midSpine.x, y1: poseData.midSpine.y, x2: poseData.pelvis.x, y2: poseData.pelvis.y },
+                      { x1: poseData.pelvis.x, y1: poseData.pelvis.y, x2: poseData.leftHip.x, y2: poseData.leftHip.y },
+                      { x1: poseData.pelvis.x, y1: poseData.pelvis.y, x2: poseData.rightHip.x, y2: poseData.rightHip.y },
+                      { x1: poseData.leftHip.x, y1: poseData.leftHip.y, x2: poseData.leftKnee.x, y2: poseData.leftKnee.y },
+                      { x1: poseData.leftKnee.x, y1: poseData.leftKnee.y, x2: poseData.leftAnkle.x, y2: poseData.leftAnkle.y },
+                      { x1: poseData.leftAnkle.x, y1: poseData.leftAnkle.y, x2: poseData.leftFoot.x, y2: poseData.leftFoot.y },
+                      { x1: poseData.rightHip.x, y1: poseData.rightHip.y, x2: poseData.rightKnee.x, y2: poseData.rightKnee.y },
+                      { x1: poseData.rightKnee.x, y1: poseData.rightKnee.y, x2: poseData.rightAnkle.x, y2: poseData.rightAnkle.y },
+                      { x1: poseData.rightAnkle.x, y1: poseData.rightAnkle.y, x2: poseData.rightFoot.x, y2: poseData.rightFoot.y },
+                    ];
+
+                    const jointNodes = [
+                      poseData.head,
+                      poseData.neck,
+                      poseData.leftShoulder,
+                      poseData.rightShoulder,
+                      poseData.leftElbow,
+                      poseData.rightElbow,
+                      poseData.leftWrist,
+                      poseData.rightWrist,
+                      poseData.midSpine,
+                      poseData.pelvis,
+                      poseData.leftHip,
+                      poseData.rightHip,
+                      poseData.leftKnee,
+                      poseData.rightKnee,
+                      poseData.leftAnkle,
+                      poseData.rightAnkle,
+                    ];
+
+                    return (
+                      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                        <Svg width="100%" height="100%" viewBox="0 0 320 480" style={StyleSheet.absoluteFill}>
+                          {/* Layer 1: Outer Neon Green Glow Aura */}
+                          {limbs.map((line, idx) => (
+                            <Line
+                              key={`glow-${idx}`}
+                              x1={line.x1}
+                              y1={line.y1}
+                              x2={line.x2}
+                              y2={line.y2}
+                              stroke="rgba(34, 197, 94, 0.4)"
+                              strokeWidth={10}
+                              strokeLinecap="round"
+                            />
+                          ))}
+
+                          {/* Layer 2: Core Sharp Green Laser Sticks */}
+                          {limbs.map((line, idx) => (
+                            <Line
+                              key={`core-${idx}`}
+                              x1={line.x1}
+                              y1={line.y1}
+                              x2={line.x2}
+                              y2={line.y2}
+                              stroke="#22C55E"
+                              strokeWidth={4.5}
+                              strokeLinecap="round"
+                            />
+                          ))}
+
+                          {/* Head Cranial Outer Reticle Ring */}
+                          <Circle
+                            cx={poseData.head.x}
+                            cy={poseData.head.y}
+                            r={18}
+                            stroke="rgba(34, 197, 94, 0.4)"
+                            strokeWidth={8}
+                            fill="none"
+                          />
+                          <Circle
+                            cx={poseData.head.x}
+                            cy={poseData.head.y}
+                            r={18}
+                            stroke="#22C55E"
+                            strokeWidth={3}
+                            fill="rgba(34, 197, 94, 0.2)"
+                          />
+                          {/* Cranial Crosshairs */}
+                          <Line x1={poseData.head.x - 24} y1={poseData.head.y} x2={poseData.head.x - 18} y2={poseData.head.y} stroke="#00F0FF" strokeWidth={2} />
+                          <Line x1={poseData.head.x + 18} y1={poseData.head.y} x2={poseData.head.x + 24} y2={poseData.head.y} stroke="#00F0FF" strokeWidth={2} />
+                          <Line x1={poseData.head.x} y1={poseData.head.y - 24} x2={poseData.head.x} y2={poseData.head.y - 18} stroke="#00F0FF" strokeWidth={2} />
+                          <Circle cx={poseData.head.x} cy={poseData.head.y} r={4} fill="#00F0FF" />
+
+                          {/* Layer 3: 16 Pulsing Cyan Joint Nodes with White Core */}
+                          {jointNodes.map((pt, idx) => (
+                            <G key={`joint-${idx}`}>
+                              <Circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r={7}
+                                fill="rgba(0, 240, 255, 0.5)"
+                                stroke="#00F0FF"
+                                strokeWidth={1.8}
+                              />
+                              <Circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r={3}
+                                fill="#FFFFFF"
+                              />
+                            </G>
+                          ))}
+                        </Svg>
+                      </View>
+                    );
+                  })()}
+                </>
               )}
 
               {/* Sci-Fi HUD Corner Brackets */}
