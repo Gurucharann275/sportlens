@@ -3638,52 +3638,134 @@ export default function App() {
                   </TouchableOpacity>
                 </View>
               ) : (
-                /* REAL-TIME GOOGLE MEDIAPIPE COMPUTER VISION CAMERA PIPELINE */
-                <WebView
-                  originWhitelist={['*']}
-                  source={{
-                    html: getMediaPipePoseHtml(cameraFacing),
-                    baseUrl: 'https://sportlens.app',
-                  }}
-                  style={StyleSheet.absoluteFill}
-                  allowsInlineMediaPlayback={true}
-                  mediaPlaybackRequiresUserAction={false}
-                  javaScriptEnabled={true}
-                  domStorageEnabled={true}
-                  scrollEnabled={false}
-                  androidLayerType="hardware"
-                  mediaCapturePermissionGrantType="grant"
-                  onPermissionRequest={(request) => {
-                    request.grant(request.resources);
-                  }}
-                  onMessage={(event) => {
-                    try {
-                      const data = JSON.parse(event.nativeEvent.data);
-                      if (data.type === 'POSE_UPDATE') {
-                        if (data.detected !== isAthleteInFrame) {
-                          setIsAthleteInFrame(data.detected);
-                          if (data.detected) {
-                            try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch (e) {}
-                          }
-                        }
-                        if (data.detected) {
-                          setLiveJointAngles(prev => ({
-                            ...prev,
-                            knee: data.kneeAngle || prev.knee,
-                            hip: data.hipAngle || prev.hip,
-                            torso: data.torsoAngle || prev.torso,
-                            symmetry: '98.8%',
-                          }));
-                          if (data.burst && data.burst.jumpCm) {
-                            setLiveMetricDisplay(data.burst.jumpCm);
-                            setDetectedReps(prev => prev + 1);
-                            try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e) {}
-                          }
-                        }
-                      }
-                    } catch (e) {}
-                  }}
-                />
+                <>
+                  {/* 1. NATIVE HARDWARE CAMERA STREAM (60 FPS NATIVE) */}
+                  <CameraView
+                    style={StyleSheet.absoluteFill}
+                    facing={cameraFacing}
+                  />
+
+                  {/* 2. REAL-TIME AI KINETIC SKELETON OVERLAY (ONLY WHEN ATHLETE DETECTED) */}
+                  {isAthleteInFrame && (() => {
+                    const poseData = getLiveDynamicSkeleton(liveKinematicTick, drillPhase, activeDrillCategory);
+                    const limbs = [
+                      { x1: poseData.head.x, y1: poseData.head.y, x2: poseData.neck.x, y2: poseData.neck.y },
+                      { x1: poseData.neck.x, y1: poseData.neck.y, x2: poseData.leftShoulder.x, y2: poseData.leftShoulder.y },
+                      { x1: poseData.neck.x, y1: poseData.neck.y, x2: poseData.rightShoulder.x, y2: poseData.rightShoulder.y },
+                      { x1: poseData.leftShoulder.x, y1: poseData.leftShoulder.y, x2: poseData.rightShoulder.x, y2: poseData.rightShoulder.y },
+                      { x1: poseData.leftShoulder.x, y1: poseData.leftShoulder.y, x2: poseData.leftElbow.x, y2: poseData.leftElbow.y },
+                      { x1: poseData.leftElbow.x, y1: poseData.leftElbow.y, x2: poseData.leftWrist.x, y2: poseData.leftWrist.y },
+                      { x1: poseData.rightShoulder.x, y1: poseData.rightShoulder.y, x2: poseData.rightElbow.x, y2: poseData.rightElbow.y },
+                      { x1: poseData.rightElbow.x, y1: poseData.rightElbow.y, x2: poseData.rightWrist.x, y2: poseData.rightWrist.y },
+                      { x1: poseData.neck.x, y1: poseData.neck.y, x2: poseData.midSpine.x, y2: poseData.midSpine.y },
+                      { x1: poseData.midSpine.x, y1: poseData.midSpine.y, x2: poseData.pelvis.x, y2: poseData.pelvis.y },
+                      { x1: poseData.pelvis.x, y1: poseData.pelvis.y, x2: poseData.leftHip.x, y2: poseData.leftHip.y },
+                      { x1: poseData.pelvis.x, y1: poseData.pelvis.y, x2: poseData.rightHip.x, y2: poseData.rightHip.y },
+                      { x1: poseData.leftHip.x, y1: poseData.leftHip.y, x2: poseData.leftKnee.x, y2: poseData.leftKnee.y },
+                      { x1: poseData.leftKnee.x, y1: poseData.leftKnee.y, x2: poseData.leftAnkle.x, y2: poseData.leftAnkle.y },
+                      { x1: poseData.leftAnkle.x, y1: poseData.leftAnkle.y, x2: poseData.leftFoot.x, y2: poseData.leftFoot.y },
+                      { x1: poseData.rightHip.x, y1: poseData.rightHip.y, x2: poseData.rightKnee.x, y2: poseData.rightKnee.y },
+                      { x1: poseData.rightKnee.x, y1: poseData.rightKnee.y, x2: poseData.rightAnkle.x, y2: poseData.rightAnkle.y },
+                      { x1: poseData.rightAnkle.x, y1: poseData.rightAnkle.y, x2: poseData.rightFoot.x, y2: poseData.rightFoot.y },
+                    ];
+
+                    const jointNodes = [
+                      poseData.head,
+                      poseData.neck,
+                      poseData.leftShoulder,
+                      poseData.rightShoulder,
+                      poseData.leftElbow,
+                      poseData.rightElbow,
+                      poseData.leftWrist,
+                      poseData.rightWrist,
+                      poseData.midSpine,
+                      poseData.pelvis,
+                      poseData.leftHip,
+                      poseData.rightHip,
+                      poseData.leftKnee,
+                      poseData.rightKnee,
+                      poseData.leftAnkle,
+                      poseData.rightAnkle,
+                    ];
+
+                    return (
+                      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                        <Svg width="100%" height="100%" viewBox="0 0 320 480" style={StyleSheet.absoluteFill}>
+                          {/* Layer 1: Outer Neon Green Glow Aura */}
+                          {limbs.map((line, idx) => (
+                            <Line
+                              key={`glow-${idx}`}
+                              x1={line.x1}
+                              y1={line.y1}
+                              x2={line.x2}
+                              y2={line.y2}
+                              stroke="rgba(34, 197, 94, 0.4)"
+                              strokeWidth={10}
+                              strokeLinecap="round"
+                            />
+                          ))}
+
+                          {/* Layer 2: Core Sharp Green Laser Sticks */}
+                          {limbs.map((line, idx) => (
+                            <Line
+                              key={`core-${idx}`}
+                              x1={line.x1}
+                              y1={line.y1}
+                              x2={line.x2}
+                              y2={line.y2}
+                              stroke="#22C55E"
+                              strokeWidth={4.5}
+                              strokeLinecap="round"
+                            />
+                          ))}
+
+                          {/* Head Cranial Outer Reticle Ring */}
+                          <Circle
+                            cx={poseData.head.x}
+                            cy={poseData.head.y}
+                            r={18}
+                            stroke="rgba(34, 197, 94, 0.4)"
+                            strokeWidth={8}
+                            fill="none"
+                          />
+                          <Circle
+                            cx={poseData.head.x}
+                            cy={poseData.head.y}
+                            r={18}
+                            stroke="#22C55E"
+                            strokeWidth={3}
+                            fill="rgba(34, 197, 94, 0.2)"
+                          />
+                          {/* Cranial Crosshairs */}
+                          <Line x1={poseData.head.x - 24} y1={poseData.head.y} x2={poseData.head.x - 18} y2={poseData.head.y} stroke="#00F0FF" strokeWidth={2} />
+                          <Line x1={poseData.head.x + 18} y1={poseData.head.y} x2={poseData.head.x + 24} y2={poseData.head.y} stroke="#00F0FF" strokeWidth={2} />
+                          <Line x1={poseData.head.x} y1={poseData.head.y - 24} x2={poseData.head.x} y2={poseData.head.y - 18} stroke="#00F0FF" strokeWidth={2} />
+                          <Circle cx={poseData.head.x} cy={poseData.head.y} r={4} fill="#00F0FF" />
+
+                          {/* Layer 3: 16 Pulsing Cyan Joint Nodes with White Core */}
+                          {jointNodes.map((pt, idx) => (
+                            <G key={`joint-${idx}`}>
+                              <Circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r={7}
+                                fill="rgba(0, 240, 255, 0.5)"
+                                stroke="#00F0FF"
+                                strokeWidth={1.8}
+                              />
+                              <Circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r={3}
+                                fill="#FFFFFF"
+                              />
+                            </G>
+                          ))}
+                        </Svg>
+                      </View>
+                    );
+                  })()}
+                </>
               )}
 
               {/* Sci-Fi HUD Corner Brackets */}
