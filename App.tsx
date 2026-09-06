@@ -219,6 +219,7 @@ export default function App() {
   const recordTimerRef = useRef<any>(null);
   const countdownTimerRef = useRef<any>(null);
   const [liveKinematicTick, setLiveKinematicTick] = useState(0);
+  const [isAthleteInFrame, setIsAthleteInFrame] = useState(false); // 👤 Only show green limbs when a person is in frame
 
   // 🔄 REAL-TIME AUTONOMOUS LIMB MOTION ENGINE
   // Automatically runs whenever the camera is open - tracks 4 limbs & torso live with biological sway & motion
@@ -924,6 +925,7 @@ export default function App() {
       }
     }
 
+    setIsAthleteInFrame(false); // Reset to scanning when opening camera
     setIsCameraModalOpen(true);
   };
 
@@ -932,6 +934,7 @@ export default function App() {
     if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
     if (recordTimerRef.current) clearInterval(recordTimerRef.current);
 
+    setIsAthleteInFrame(true); // Lock athlete on drill start
     setDrillPhase('countdown');
     setCountdownNumber(3);
     setRecordDurationSec(0);
@@ -1029,6 +1032,7 @@ export default function App() {
       clearInterval(recordTimerRef.current);
       recordTimerRef.current = null;
     }
+    setIsAthleteInFrame(false);
     setDrillPhase('standby');
     setRecordDurationSec(0);
     setDetectedReps(0);
@@ -3296,7 +3300,33 @@ export default function App() {
           <View style={styles.cameraBox}>
             <View style={styles.cameraBoxHeader}>
               <Text style={styles.cameraBoxTitle}>{activeDrillTitle}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {/* Real-Time Person Presence Toggle Pill */}
+                <TouchableOpacity
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5,
+                    backgroundColor: isAthleteInFrame ? 'rgba(34,197,94,0.18)' : 'rgba(245,158,11,0.18)',
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: isAthleteInFrame ? '#22C55E' : '#F59E0B',
+                  }}
+                  onPress={() => {
+                    const nextState = !isAthleteInFrame;
+                    setIsAthleteInFrame(nextState);
+                    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch (e) {}
+                    speakFeedback(nextState ? 'Athlete detected! 14 joints locked.' : 'Athlete out of frame.', 'en-IN');
+                  }}
+                >
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: isAthleteInFrame ? '#22C55E' : '#F59E0B' }} />
+                  <Text style={{ color: isAthleteInFrame ? '#22C55E' : '#F59E0B', fontSize: 10, fontWeight: 'bold' }}>
+                    {isAthleteInFrame ? '👤 Locked (In Frame)' : '🔍 Searching...'}
+                  </Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity onPress={() => setCameraFacing(prev => prev === 'front' ? 'back' : 'front')}>
                   <Ionicons name="camera-reverse" color="#22C55E" size={20} />
                 </TouchableOpacity>
@@ -3324,11 +3354,23 @@ export default function App() {
                 </View>
               )}
 
+              {/* Interactive Viewfinder Tap Target (Tap anywhere to simulate stepping in / stepping out) */}
+              <TouchableOpacity
+                activeOpacity={1}
+                style={StyleSheet.absoluteFill}
+                onPress={() => {
+                  const nextState = !isAthleteInFrame;
+                  setIsAthleteInFrame(nextState);
+                  try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}
+                  speakFeedback(nextState ? 'Athlete detected! 14 joints locked.' : 'Athlete out of frame.', 'en-IN');
+                }}
+              />
+
               {/* Sci-Fi HUD Corner Brackets */}
-              <View style={{ position: 'absolute', top: 10, left: 10, width: 24, height: 24, borderTopWidth: 3, borderLeftWidth: 3, borderColor: '#00F0FF' }} />
-              <View style={{ position: 'absolute', top: 10, right: 10, width: 24, height: 24, borderTopWidth: 3, borderRightWidth: 3, borderColor: '#00F0FF' }} />
-              <View style={{ position: 'absolute', bottom: 10, left: 10, width: 24, height: 24, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: '#22C55E' }} />
-              <View style={{ position: 'absolute', bottom: 10, right: 10, width: 24, height: 24, borderBottomWidth: 3, borderRightWidth: 3, borderColor: '#22C55E' }} />
+              <View style={{ position: 'absolute', top: 10, left: 10, width: 24, height: 24, borderTopWidth: 3, borderLeftWidth: 3, borderColor: isAthleteInFrame ? '#00F0FF' : '#F59E0B' }} />
+              <View style={{ position: 'absolute', top: 10, right: 10, width: 24, height: 24, borderTopWidth: 3, borderRightWidth: 3, borderColor: isAthleteInFrame ? '#00F0FF' : '#F59E0B' }} />
+              <View style={{ position: 'absolute', bottom: 10, left: 10, width: 24, height: 24, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: isAthleteInFrame ? '#22C55E' : '#64748B' }} />
+              <View style={{ position: 'absolute', bottom: 10, right: 10, width: 24, height: 24, borderBottomWidth: 3, borderRightWidth: 3, borderColor: isAthleteInFrame ? '#22C55E' : '#64748B' }} />
 
               {/* 1. COUNTDOWN 3-2-1 GLOWING HUD */}
               {drillPhase === 'countdown' && (
@@ -3347,180 +3389,207 @@ export default function App() {
                 </View>
               )}
 
-              {/* Dynamic 14-Joint Biomechanical Skeleton Stick Figure Overlay (Always Live & Moving) */}
-              <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-                {/* SVG Full-Body Stick Figure (4 Limbs + Torso + Head - Scaled to 320x480) */}
-                {(() => {
-                  const poseData = getLiveDynamicSkeleton(liveKinematicTick, drillPhase, activeDrillCategory);
-                  const limbs = [
-                    // Head to Neck
-                    { x1: poseData.head.x, y1: poseData.head.y + 18, x2: poseData.neck.x, y2: poseData.neck.y },
-                    // Clavicle / Shoulder Beam
-                    { x1: poseData.leftShoulder.x, y1: poseData.leftShoulder.y, x2: poseData.rightShoulder.x, y2: poseData.rightShoulder.y },
-                    // Torso Spine Column (Neck -> Mid-Spine -> Pelvis)
-                    { x1: poseData.neck.x, y1: poseData.neck.y, x2: poseData.midSpine.x, y2: poseData.midSpine.y },
-                    { x1: poseData.midSpine.x, y1: poseData.midSpine.y, x2: poseData.pelvis.x, y2: poseData.pelvis.y },
-                    // Pelvic Bar
-                    { x1: poseData.leftHip.x, y1: poseData.leftHip.y, x2: poseData.rightHip.x, y2: poseData.rightHip.y },
-                    // LEFT ARM (Shoulder -> Elbow -> Wrist)
-                    { x1: poseData.leftShoulder.x, y1: poseData.leftShoulder.y, x2: poseData.leftElbow.x, y2: poseData.leftElbow.y },
-                    { x1: poseData.leftElbow.x, y1: poseData.leftElbow.y, x2: poseData.leftWrist.x, y2: poseData.leftWrist.y },
-                    // RIGHT ARM (Shoulder -> Elbow -> Wrist)
-                    { x1: poseData.rightShoulder.x, y1: poseData.rightShoulder.y, x2: poseData.rightElbow.x, y2: poseData.rightElbow.y },
-                    { x1: poseData.rightElbow.x, y1: poseData.rightElbow.y, x2: poseData.rightWrist.x, y2: poseData.rightWrist.y },
-                    // LEFT LEG (Hip -> Knee -> Ankle -> Foot)
-                    { x1: poseData.leftHip.x, y1: poseData.leftHip.y, x2: poseData.leftKnee.x, y2: poseData.leftKnee.y },
-                    { x1: poseData.leftKnee.x, y1: poseData.leftKnee.y, x2: poseData.leftAnkle.x, y2: poseData.leftAnkle.y },
-                    { x1: poseData.leftAnkle.x, y1: poseData.leftAnkle.y, x2: poseData.leftFoot.x, y2: poseData.leftFoot.y },
-                    // RIGHT LEG (Hip -> Knee -> Ankle -> Foot)
-                    { x1: poseData.rightHip.x, y1: poseData.rightHip.y, x2: poseData.rightKnee.x, y2: poseData.rightKnee.y },
-                    { x1: poseData.rightKnee.x, y1: poseData.rightKnee.y, x2: poseData.rightAnkle.x, y2: poseData.rightAnkle.y },
-                    { x1: poseData.rightAnkle.x, y1: poseData.rightAnkle.y, x2: poseData.rightFoot.x, y2: poseData.rightFoot.y },
-                  ];
+              {/* 2. CASE A: NO PERSON IN FRAME -> SHOW SEARCHING SCANNER (NO GREEN SKELETON) */}
+              {!isAthleteInFrame && (
+                <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+                  {/* Subtle Translucent Target Silhouette */}
+                  <View style={{ width: 180, height: 280, borderRadius: 24, borderWidth: 1.5, borderColor: 'rgba(245, 158, 11, 0.35)', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(245, 158, 11, 0.04)' }}>
+                    <Ionicons name="body-outline" size={72} color="rgba(245, 158, 11, 0.3)" />
+                    <Text style={{ color: '#F59E0B', fontSize: 11, fontWeight: '900', marginTop: 10, letterSpacing: 1 }}>
+                      🔍 SCANNING FOR ATHLETE
+                    </Text>
+                    <Text style={{ color: '#94A3B8', fontSize: 9.5, textAlign: 'center', marginTop: 4, paddingHorizontal: 12 }}>
+                      Step into frame (6–8 ft away) or tap screen
+                    </Text>
+                  </View>
 
-                  const jointNodes = [
-                    poseData.leftShoulder,
-                    poseData.rightShoulder,
-                    poseData.leftElbow,
-                    poseData.rightElbow,
-                    poseData.leftWrist,
-                    poseData.rightWrist,
-                    poseData.midSpine,
-                    poseData.pelvis,
-                    poseData.leftHip,
-                    poseData.rightHip,
-                    poseData.leftKnee,
-                    poseData.rightKnee,
-                    poseData.leftAnkle,
-                    poseData.rightAnkle,
-                  ];
+                  {/* Top Searching Status Badge */}
+                  <View style={{ position: 'absolute', top: 10, alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, borderWidth: 1.5, borderColor: '#F59E0B' }}>
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F59E0B' }} />
+                      <Text style={{ color: '#F59E0B', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>
+                        🟡 AI SCANNER: 0 ATHLETES DETECTED
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
 
-                  return (
-                    <>
-                      <Svg width="100%" height="100%" viewBox="0 0 320 480" style={StyleSheet.absoluteFill}>
-                        {/* 1. LAYER 1: OUTER NEON GLOW AURA FOR ALL LIMBS */}
-                        {limbs.map((line, idx) => (
-                          <Line
-                            key={`glow-${idx}`}
-                            x1={line.x1}
-                            y1={line.y1}
-                            x2={line.x2}
-                            y2={line.y2}
-                            stroke="rgba(34, 197, 94, 0.35)"
-                            strokeWidth={10}
-                            strokeLinecap="round"
+              {/* 3. CASE B: PERSON DETECTED -> RENDER DYNAMIC GREEN SKELETON LIMBS */}
+              {isAthleteInFrame && (
+                <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+                  {(() => {
+                    const poseData = getLiveDynamicSkeleton(liveKinematicTick, drillPhase, activeDrillCategory);
+                    const limbs = [
+                      // Head to Neck
+                      { x1: poseData.head.x, y1: poseData.head.y + 18, x2: poseData.neck.x, y2: poseData.neck.y },
+                      // Clavicle / Shoulder Beam
+                      { x1: poseData.leftShoulder.x, y1: poseData.leftShoulder.y, x2: poseData.rightShoulder.x, y2: poseData.rightShoulder.y },
+                      // Torso Spine Column (Neck -> Mid-Spine -> Pelvis)
+                      { x1: poseData.neck.x, y1: poseData.neck.y, x2: poseData.midSpine.x, y2: poseData.midSpine.y },
+                      { x1: poseData.midSpine.x, y1: poseData.midSpine.y, x2: poseData.pelvis.x, y2: poseData.pelvis.y },
+                      // Pelvic Bar
+                      { x1: poseData.leftHip.x, y1: poseData.leftHip.y, x2: poseData.rightHip.x, y2: poseData.rightHip.y },
+                      // LEFT ARM (Shoulder -> Elbow -> Wrist)
+                      { x1: poseData.leftShoulder.x, y1: poseData.leftShoulder.y, x2: poseData.leftElbow.x, y2: poseData.leftElbow.y },
+                      { x1: poseData.leftElbow.x, y1: poseData.leftElbow.y, x2: poseData.leftWrist.x, y2: poseData.leftWrist.y },
+                      // RIGHT ARM (Shoulder -> Elbow -> Wrist)
+                      { x1: poseData.rightShoulder.x, y1: poseData.rightShoulder.y, x2: poseData.rightElbow.x, y2: poseData.rightElbow.y },
+                      { x1: poseData.rightElbow.x, y1: poseData.rightElbow.y, x2: poseData.rightWrist.x, y2: poseData.rightWrist.y },
+                      // LEFT LEG (Hip -> Knee -> Ankle -> Foot)
+                      { x1: poseData.leftHip.x, y1: poseData.leftHip.y, x2: poseData.leftKnee.x, y2: poseData.leftKnee.y },
+                      { x1: poseData.leftKnee.x, y1: poseData.leftKnee.y, x2: poseData.leftAnkle.x, y2: poseData.leftAnkle.y },
+                      { x1: poseData.leftAnkle.x, y1: poseData.leftAnkle.y, x2: poseData.leftFoot.x, y2: poseData.leftFoot.y },
+                      // RIGHT LEG (Hip -> Knee -> Ankle -> Foot)
+                      { x1: poseData.rightHip.x, y1: poseData.rightHip.y, x2: poseData.rightKnee.x, y2: poseData.rightKnee.y },
+                      { x1: poseData.rightKnee.x, y1: poseData.rightKnee.y, x2: poseData.rightAnkle.x, y2: poseData.rightAnkle.y },
+                      { x1: poseData.rightAnkle.x, y1: poseData.rightAnkle.y, x2: poseData.rightFoot.x, y2: poseData.rightFoot.y },
+                    ];
+
+                    const jointNodes = [
+                      poseData.leftShoulder,
+                      poseData.rightShoulder,
+                      poseData.leftElbow,
+                      poseData.rightElbow,
+                      poseData.leftWrist,
+                      poseData.rightWrist,
+                      poseData.midSpine,
+                      poseData.pelvis,
+                      poseData.leftHip,
+                      poseData.rightHip,
+                      poseData.leftKnee,
+                      poseData.rightKnee,
+                      poseData.leftAnkle,
+                      poseData.rightAnkle,
+                    ];
+
+                    return (
+                      <>
+                        <Svg width="100%" height="100%" viewBox="0 0 320 480" style={StyleSheet.absoluteFill}>
+                          {/* 1. LAYER 1: OUTER NEON GLOW AURA FOR ALL LIMBS */}
+                          {limbs.map((line, idx) => (
+                            <Line
+                              key={`glow-${idx}`}
+                              x1={line.x1}
+                              y1={line.y1}
+                              x2={line.x2}
+                              y2={line.y2}
+                              stroke="rgba(34, 197, 94, 0.35)"
+                              strokeWidth={10}
+                              strokeLinecap="round"
+                            />
+                          ))}
+
+                          {/* 2. LAYER 2: SHARP CORE GREEN STICKS FOR ALL LIMBS */}
+                          {limbs.map((line, idx) => (
+                            <Line
+                              key={`core-${idx}`}
+                              x1={line.x1}
+                              y1={line.y1}
+                              x2={line.x2}
+                              y2={line.y2}
+                              stroke="#22C55E"
+                              strokeWidth={4.5}
+                              strokeLinecap="round"
+                            />
+                          ))}
+
+                          {/* Head Cranial Outer Ring with Glow */}
+                          <Circle
+                            cx={poseData.head.x}
+                            cy={poseData.head.y}
+                            r={18}
+                            stroke="rgba(34, 197, 94, 0.4)"
+                            strokeWidth={8}
+                            fill="none"
                           />
-                        ))}
-
-                        {/* 2. LAYER 2: SHARP CORE GREEN STICKS FOR ALL LIMBS */}
-                        {limbs.map((line, idx) => (
-                          <Line
-                            key={`core-${idx}`}
-                            x1={line.x1}
-                            y1={line.y1}
-                            x2={line.x2}
-                            y2={line.y2}
+                          <Circle
+                            cx={poseData.head.x}
+                            cy={poseData.head.y}
+                            r={18}
                             stroke="#22C55E"
-                            strokeWidth={4.5}
-                            strokeLinecap="round"
+                            strokeWidth={3}
+                            fill="rgba(34, 197, 94, 0.2)"
                           />
-                        ))}
+                          {/* Cranial Reticle Crosshairs */}
+                          <Line
+                            x1={poseData.head.x - 24}
+                            y1={poseData.head.y}
+                            x2={poseData.head.x - 18}
+                            y2={poseData.head.y}
+                            stroke="#00F0FF"
+                            strokeWidth={2}
+                          />
+                          <Line
+                            x1={poseData.head.x + 18}
+                            y1={poseData.head.y}
+                            x2={poseData.head.x + 24}
+                            y2={poseData.head.y}
+                            stroke="#00F0FF"
+                            strokeWidth={2}
+                          />
+                          <Line
+                            x1={poseData.head.x}
+                            y1={poseData.head.y - 24}
+                            x2={poseData.head.x}
+                            y2={poseData.head.y - 18}
+                            stroke="#00F0FF"
+                            strokeWidth={2}
+                          />
+                          <Circle
+                            cx={poseData.head.x}
+                            cy={poseData.head.y}
+                            r={4}
+                            fill="#00F0FF"
+                          />
 
-                        {/* Head Cranial Outer Ring with Glow */}
-                        <Circle
-                          cx={poseData.head.x}
-                          cy={poseData.head.y}
-                          r={18}
-                          stroke="rgba(34, 197, 94, 0.4)"
-                          strokeWidth={8}
-                          fill="none"
-                        />
-                        <Circle
-                          cx={poseData.head.x}
-                          cy={poseData.head.y}
-                          r={18}
-                          stroke="#22C55E"
-                          strokeWidth={3}
-                          fill="rgba(34, 197, 94, 0.2)"
-                        />
-                        {/* Cranial Reticle Crosshairs */}
-                        <Line
-                          x1={poseData.head.x - 24}
-                          y1={poseData.head.y}
-                          x2={poseData.head.x - 18}
-                          y2={poseData.head.y}
-                          stroke="#00F0FF"
-                          strokeWidth={2}
-                        />
-                        <Line
-                          x1={poseData.head.x + 18}
-                          y1={poseData.head.y}
-                          x2={poseData.head.x + 24}
-                          y2={poseData.head.y}
-                          stroke="#00F0FF"
-                          strokeWidth={2}
-                        />
-                        <Line
-                          x1={poseData.head.x}
-                          y1={poseData.head.y - 24}
-                          x2={poseData.head.x}
-                          y2={poseData.head.y - 18}
-                          stroke="#00F0FF"
-                          strokeWidth={2}
-                        />
-                        <Circle
-                          cx={poseData.head.x}
-                          cy={poseData.head.y}
-                          r={4}
-                          fill="#00F0FF"
-                        />
+                          {/* 3. LAYER 3: 14 PULSING CYAN JOINT SENSORS WITH WHITE CORE */}
+                          {jointNodes.map((pt, idx) => (
+                            <G key={`joint-${idx}`}>
+                              <Circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r={7}
+                                fill="rgba(0, 240, 255, 0.45)"
+                                stroke="#00F0FF"
+                                strokeWidth={1.8}
+                              />
+                              <Circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r={3}
+                                fill="#FFFFFF"
+                              />
+                            </G>
+                          ))}
+                        </Svg>
 
-                        {/* 3. LAYER 3: 14 PULSING CYAN JOINT SENSORS WITH WHITE CORE */}
-                        {jointNodes.map((pt, idx) => (
-                          <G key={`joint-${idx}`}>
-                            <Circle
-                              cx={pt.x}
-                              cy={pt.y}
-                              r={7}
-                              fill="rgba(0, 240, 255, 0.45)"
-                              stroke="#00F0FF"
-                              strokeWidth={1.8}
-                            />
-                            <Circle
-                              cx={pt.x}
-                              cy={pt.y}
-                              r={3}
-                              fill="#FFFFFF"
-                            />
-                          </G>
-                        ))}
-                      </Svg>
-
-                      {/* Floating HUD Badges */}
-                      <View style={{ position: 'absolute', top: 10, alignItems: 'center' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, borderWidth: 1.5, borderColor: '#22C55E' }}>
-                          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#22C55E' }} />
-                          <Text style={{ color: '#22C55E', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>
-                            🟢 4 LIMBS + TORSO AI TRACKING (LIVE)
-                          </Text>
-                        </View>
-
-                        <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
-                          <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#00F0FF' }}>
-                            <Text style={{ color: '#00F0FF', fontSize: 8.5, fontWeight: 'bold' }}>📐 HIP: {poseData.hipAngle}</Text>
+                        {/* Floating HUD Badges */}
+                        <View style={{ position: 'absolute', top: 10, alignItems: 'center' }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, borderWidth: 1.5, borderColor: '#22C55E' }}>
+                            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#22C55E' }} />
+                            <Text style={{ color: '#22C55E', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>
+                              🟢 4 LIMBS + TORSO AI TRACKING (LOCKED)
+                            </Text>
                           </View>
-                          <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#22C55E' }}>
-                            <Text style={{ color: '#22C55E', fontSize: 8.5, fontWeight: 'bold' }}>🦵 KNEE: {poseData.kneeAngle}</Text>
-                          </View>
-                          <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#FACC15' }}>
-                            <Text style={{ color: '#FACC15', fontSize: 8.5, fontWeight: 'bold' }}>⚡ TORSO: {poseData.torsoAngle}</Text>
+
+                          <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
+                            <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#00F0FF' }}>
+                              <Text style={{ color: '#00F0FF', fontSize: 8.5, fontWeight: 'bold' }}>📐 HIP: {poseData.hipAngle}</Text>
+                            </View>
+                            <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#22C55E' }}>
+                              <Text style={{ color: '#22C55E', fontSize: 8.5, fontWeight: 'bold' }}>🦵 KNEE: {poseData.kneeAngle}</Text>
+                            </View>
+                            <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#FACC15' }}>
+                              <Text style={{ color: '#FACC15', fontSize: 8.5, fontWeight: 'bold' }}>⚡ TORSO: {poseData.torsoAngle}</Text>
+                            </View>
                           </View>
                         </View>
-                      </View>
-                    </>
-                  );
-                })()}
-              </View>
+                      </>
+                    );
+                  })()}
+                </View>
+              )}
 
               <Text style={styles.viewfinderGuide}>
                 {drillPhase === 'recording'
