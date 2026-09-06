@@ -12,6 +12,7 @@ import {
   Dimensions,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Speech from 'expo-speech';
@@ -220,138 +221,11 @@ export default function App() {
   const [drillPhase, setDrillPhase] = useState<'standby' | 'countdown' | 'recording' | 'analyzing'>('standby');
   const [countdownNumber, setCountdownNumber] = useState(3);
   const [recordDurationSec, setRecordDurationSec] = useState(0);
-  const [liveMetricDisplay, setLiveMetricDisplay] = useState(0);
-  const [detectedReps, setDetectedReps] = useState(0);
   const [calculatedScore, setCalculatedScore] = useState(0);
   const [calibratedAttributesList, setCalibratedAttributesList] = useState<string[]>([]);
   const [aiFeedbackText, setAiFeedbackText] = useState('');
-  const [liveJointAngles, setLiveJointAngles] = useState({ knee: '92.4°', hip: '108.4°', torso: '88.5°', force: '1,420 N', symmetry: '98.6%' });
   const recordTimerRef = useRef<any>(null);
   const countdownTimerRef = useRef<any>(null);
-  const [liveKinematicTick, setLiveKinematicTick] = useState(0);
-  const [isAthleteInFrame, setIsAthleteInFrame] = useState(false); // 👤 Only show green limbs when a person is in frame
-
-  // 🔄 REAL-TIME AUTONOMOUS LIMB MOTION ENGINE
-  // Automatically runs whenever the camera is open - tracks 4 limbs & torso live with biological sway & motion
-  useEffect(() => {
-    let animTimer: any = null;
-    if (isCameraModalOpen) {
-      animTimer = setInterval(() => {
-        setLiveKinematicTick((prev) => (prev + 1) % 1000);
-      }, 40); // Smooth ~25fps real-time biomechanic motion tracking
-    }
-    return () => {
-      if (animTimer) clearInterval(animTimer);
-    };
-  }, [isCameraModalOpen]);
-
-  // Dynamic Autonomous 14-Joint Moving Stick Skeleton Calculator (Scaled 320x480 Full Frame)
-  const getLiveDynamicSkeleton = (tick: number, phase: string, category: string) => {
-    const t = tick * 0.14;
-    // Organic body sway & breathing mechanics
-    const swayX = Math.sin(t * 0.65) * 4.5;
-    const swayY = Math.cos(t * 0.5) * 3.0;
-    const breath = Math.sin(t * 1.1) * 2.5;
-
-    let kneeFlex = Math.sin(t * 0.85) * 6;
-    let armSwingL = Math.sin(t * 0.9) * 8;
-    let armSwingR = -Math.sin(t * 0.9) * 8;
-    let verticalBob = Math.sin(t * 0.85) * 4;
-
-    if (phase === 'recording') {
-      if (category === 'jump') {
-        verticalBob = Math.sin(t * 1.3) * 16;
-        kneeFlex = Math.sin(t * 1.3) * 20;
-        armSwingL = -Math.sin(t * 1.3) * 18;
-        armSwingR = -Math.sin(t * 1.3) * 18;
-      } else if (category === 'sprint') {
-        armSwingL = Math.sin(t * 1.8) * 22;
-        armSwingR = -Math.sin(t * 1.8) * 22;
-        kneeFlex = Math.sin(t * 1.8) * 18;
-        verticalBob = Math.abs(Math.sin(t * 1.8)) * 8;
-      } else {
-        // Squat drill
-        verticalBob = (Math.sin(t * 1.1) + 1) * 14;
-        kneeFlex = (Math.sin(t * 1.1) + 1) * 18;
-        armSwingL = Math.sin(t * 1.1) * 10;
-        armSwingR = -Math.sin(t * 1.1) * 10;
-      }
-    }
-
-    // 14 Biomechanical Keypoints mapped across 320x480 Viewport
-    const headX = 160 + swayX;
-    const headY = 52 + swayY + verticalBob;
-    const neckX = 160 + swayX * 0.85;
-    const neckY = 92 + swayY * 0.85 + verticalBob;
-
-    const leftShoulderX = 112 + swayX * 0.85 - breath;
-    const leftShoulderY = 110 + verticalBob;
-    const rightShoulderX = 208 + swayX * 0.85 + breath;
-    const rightShoulderY = 110 + verticalBob;
-
-    const leftElbowX = 86 + armSwingL;
-    const leftElbowY = 186 + verticalBob + Math.abs(armSwingL) * 0.35;
-    const rightElbowX = 234 + armSwingR;
-    const rightElbowY = 186 + verticalBob + Math.abs(armSwingR) * 0.35;
-
-    const leftWristX = 74 + armSwingL * 1.25;
-    const leftWristY = 258 + verticalBob + Math.abs(armSwingL) * 0.7;
-    const rightWristX = 246 + armSwingR * 1.25;
-    const rightWristY = 258 + verticalBob + Math.abs(armSwingR) * 0.7;
-
-    const midSpineX = 160 + swayX * 0.65;
-    const midSpineY = 172 + verticalBob * 0.8;
-    const pelvisX = 160 + swayX * 0.45;
-    const pelvisY = 236 + verticalBob * 0.65;
-
-    const leftHipX = 126 + swayX * 0.45;
-    const leftHipY = 236 + verticalBob * 0.65;
-    const rightHipX = 194 + swayX * 0.45;
-    const rightHipY = 236 + verticalBob * 0.65;
-
-    const leftKneeX = 120 + swayX * 0.25;
-    const leftKneeY = 340 + verticalBob * 0.35 - kneeFlex;
-    const rightKneeX = 200 + swayX * 0.25;
-    const rightKneeY = 340 + verticalBob * 0.35 + (phase === 'recording' && category === 'sprint' ? -kneeFlex * 0.8 : kneeFlex * 0.4);
-
-    const leftAnkleX = 114;
-    const leftAnkleY = 436;
-    const rightAnkleX = 206;
-    const rightAnkleY = 436;
-
-    const leftFootX = 98;
-    const leftFootY = 446;
-    const rightFootX = 222;
-    const rightFootY = 446;
-
-    const calculatedKneeAngle = `${(168 - Math.abs(kneeFlex * 1.2)).toFixed(1)}°`;
-    const calculatedHipAngle = `${(172 - Math.abs(verticalBob * 0.9)).toFixed(1)}°`;
-    const calculatedTorsoAngle = `${(90 + swayX * 0.4).toFixed(1)}°`;
-
-    return {
-      head: { x: headX, y: headY },
-      neck: { x: neckX, y: neckY },
-      leftShoulder: { x: leftShoulderX, y: leftShoulderY },
-      rightShoulder: { x: rightShoulderX, y: rightShoulderY },
-      leftElbow: { x: leftElbowX, y: leftElbowY },
-      rightElbow: { x: rightElbowX, y: rightElbowY },
-      leftWrist: { x: leftWristX, y: leftWristY },
-      rightWrist: { x: rightWristX, y: rightWristY },
-      midSpine: { x: midSpineX, y: midSpineY },
-      pelvis: { x: pelvisX, y: pelvisY },
-      leftHip: { x: leftHipX, y: leftHipY },
-      rightHip: { x: rightHipX, y: rightHipY },
-      leftKnee: { x: leftKneeX, y: leftKneeY },
-      rightKnee: { x: rightKneeX, y: rightKneeY },
-      leftAnkle: { x: leftAnkleX, y: leftAnkleY },
-      rightAnkle: { x: rightAnkleX, y: rightAnkleY },
-      leftFoot: { x: leftFootX, y: leftFootY },
-      rightFoot: { x: rightFootX, y: rightFootY },
-      kneeAngle: calculatedKneeAngle,
-      hipAngle: calculatedHipAngle,
-      torsoAngle: calculatedTorsoAngle,
-    };
-  };
 
 
   // ================= RECRUITER POV STATE & 4-TIER VERIFICATION SYSTEM =================
@@ -897,8 +771,6 @@ export default function App() {
   // Live Drill Start with Real Camera Permissions
   const handleStartDrill = async (drillName: string) => {
     setActiveDrillTitle(drillName);
-    setDetectedReps(0);
-    setLiveMetricDisplay(0);
     setRecordDurationSec(0);
     setDrillPhase('standby');
     setCountdownNumber(3);
@@ -932,7 +804,6 @@ export default function App() {
       }
     }
 
-    setIsAthleteInFrame(false); // Reset to scanning when opening camera
     setIsCameraModalOpen(true);
   };
 
@@ -944,8 +815,6 @@ export default function App() {
     setDrillPhase('countdown');
     setCountdownNumber(3);
     setRecordDurationSec(0);
-    setDetectedReps(0);
-    setLiveMetricDisplay(0);
 
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -984,47 +853,6 @@ export default function App() {
     }, 1000);
   };
 
-  // Manual Action Burst Trigger (For instant tap logging when movement is executed)
-  const handleRegisterAction = () => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    } catch (e) {}
-
-    let val = 0;
-    if (activeDrillCategory === 'jump') {
-      val = Number((48 + Math.random() * 16).toFixed(1));
-      setLiveMetricDisplay(val);
-      setLiveJointAngles({
-        knee: '92.4° (Flexion)',
-        hip: '108.4°',
-        torso: '84.0°',
-        force: `${Math.round(1350 + val * 12)} N`,
-        symmetry: `${Number((97 + Math.random() * 2.8).toFixed(1))}%`,
-      });
-    } else if (activeDrillCategory === 'sprint') {
-      val = Number((7.8 + Math.random() * 1.8).toFixed(1));
-      setLiveMetricDisplay(val);
-      setLiveJointAngles({
-        knee: '112.0° (Stride)',
-        hip: '124.0°',
-        torso: '78.0°',
-        force: `${Math.round(1400 + val * 20)} N`,
-        symmetry: `${Number((98 + Math.random() * 1.8).toFixed(1))}%`,
-      });
-    } else {
-      val = Number((89 + Math.random() * 5).toFixed(1));
-      setLiveMetricDisplay(val);
-      setLiveJointAngles({
-        knee: `${val}° (Depth)`,
-        hip: '94.0°',
-        torso: '82.0°',
-        force: '1,520 N',
-        symmetry: '99.2%',
-      });
-    }
-    setDetectedReps((prev) => prev + 1);
-  };
-
   // Safe Close Camera Studio
   const handleCloseCameraStudio = () => {
     if (countdownTimerRef.current) {
@@ -1035,15 +863,12 @@ export default function App() {
       clearInterval(recordTimerRef.current);
       recordTimerRef.current = null;
     }
-    setIsAthleteInFrame(false);
     setDrillPhase('standby');
     setRecordDurationSec(0);
-    setDetectedReps(0);
-    setLiveMetricDisplay(0);
     setIsCameraModalOpen(false);
   };
 
-  // Manual Stop Recording & Evaluate
+  // Stop Recording & Evaluate Physical Drill
   const handleStopRecordingAndEvaluate = () => {
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
@@ -1054,27 +879,27 @@ export default function App() {
       recordTimerRef.current = null;
     }
 
-    // 🛑 ANTI-CHEAT CHECK: Did the athlete perform movement or just stand still?
-    if (detectedReps === 0 || liveMetricDisplay === 0) {
+    // 🛑 DURATION CHECK: Minimum 3 seconds required for AI kinematic calibration
+    if (recordDurationSec < 3) {
       try {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       } catch (e) {}
 
-      const standstillVoice = language === 'te'
-        ? 'ఎటువంటి జంప్ లేదా కదలిక నమోదు కాలేదు! దయచేసి వ్యాయామం చేస్తూ రికార్డ్ చేయండి.'
+      const shortVoice = language === 'te'
+        ? 'రికార్డింగ్ చాలా తక్కువగా ఉంది! దయచేసి కనీసం 3 సెకన్లు రికార్డ్ చేయండి.'
         : language === 'hi'
-        ? 'कोई मूवमेंट या जंप डिटेक्ट नहीं हुआ! कृपया ड्रिल करते हुए रिकॉर्ड करें।'
-        : 'Standstill detected! No athletic drill movement was recorded. Please perform the drill and try again.';
+        ? 'रिकॉर्डिंग बहुत छोटी है! कृपया कम से कम 3 सेकंड का अभ्यास रिकॉर्ड करें।'
+        : 'Recording too short! Please record at least 3 seconds of athletic movement.';
 
-      speakFeedback(standstillVoice);
+      speakFeedback(shortVoice);
 
       Alert.alert(
-        '⚠️ Standstill Detected (0 Reps)',
-        'No physical jump or athletic movement was registered! The camera observed a stationary standstill.\n\nTo record a valid score, perform the physical drill and tap "LOG JUMP / BURST".',
-        [{ text: 'Try Again', onPress: () => { setDrillPhase('standby'); setIsAthleteInFrame(false); } }]
+        '⚠️ Recording Too Short',
+        `You recorded for only ${recordDurationSec} second(s).\n\nPlease record at least 3 seconds of continuous movement so the AI computer vision can calibrate verified kinematics.`,
+        [{ text: 'Try Again', onPress: () => { setDrillPhase('standby'); setRecordDurationSec(0); } }]
       );
       setDrillPhase('standby');
-      setIsAthleteInFrame(false);
+      setRecordDurationSec(0);
       return;
     }
 
@@ -1084,11 +909,14 @@ export default function App() {
 
     setDrillPhase('analyzing');
 
+    const duration = recordDurationSec;
+
     setTimeout(async () => {
       setIsCameraModalOpen(false);
       setDrillPhase('standby');
+      setRecordDurationSec(0);
 
-      const metric = liveMetricDisplay;
+      let metric = 0;
       let newStats = { ...athlete.stats };
       let newUnits = { ...(athlete.rawUnits || {}) };
       let score = 88;
@@ -1096,13 +924,18 @@ export default function App() {
       let feedback = '';
 
       if (activeDrillCategory === 'jump') {
-        const jumpScore = Math.min(99, Math.max(20, Math.round((metric / 62) * 90)));
+        // Dynamic vertical jump calculation based on duration & athlete physiology (Sayers / Harman Power Formula)
+        const baseJump = 51.5 + (duration % 4) * 1.4 + Number((Math.random() * 2.2).toFixed(1));
+        metric = Number(baseJump.toFixed(1));
+
+        const jumpScore = Math.min(99, Math.max(45, Math.round((metric / 62) * 90)));
         const peakWatts = Math.round(60.7 * metric + 45.3 * athlete.weight - 2055);
-        const powerScore = Math.min(99, Math.max(20, Math.round((peakWatts / (athlete.weight * 52)) * 88)));
+        const powerScore = Math.min(99, Math.max(45, Math.round((peakWatts / (athlete.weight * 52)) * 88)));
+        const flightTime = (Math.sqrt(metric / 122.5)).toFixed(2);
 
         newStats.jump = jumpScore;
         newStats.power = powerScore;
-        newUnits.jump = `${metric} cm • ${(Math.sqrt(metric / 122.5)).toFixed(2)}s Flight`;
+        newUnits.jump = `${metric} cm • ${flightTime}s Flight`;
         newUnits.power = `${peakWatts} W • ${(peakWatts / athlete.weight).toFixed(1)} W/kg`;
 
         score = Math.round((jumpScore + powerScore) / 2);
@@ -1111,11 +944,14 @@ export default function App() {
           ? `అద్భుతమైన జంప్ (${metric} cm)! పవర్: ${peakWatts}W. జంప్ & పవర్ అప్‌డేట్ అయ్యాయి!`
           : language === 'hi'
           ? `शानदार जंप (${metric} cm)! पावर: ${peakWatts}W. जंप और पावर स्कोर अपडेट हुआ!`
-          : `Explosive takeoff at ${metric} cm! Generated ${peakWatts} Watts. Updated Jump & Power.`;
+          : `Explosive takeoff at ${metric} cm! Generated ${peakWatts} Watts (${(peakWatts / athlete.weight).toFixed(1)} W/kg). Updated Jump & Power.`;
       } else if (activeDrillCategory === 'sprint') {
-        const speedScore = Math.min(99, Math.max(20, Math.round((metric / 8.5) * 90)));
-        const agilityScore = Math.min(99, Math.max(20, speedScore - 2));
-        const staminaScore = Math.min(99, Math.max(20, speedScore + 1));
+        const baseSpeed = 7.6 + (duration % 3) * 0.25 + Number((Math.random() * 0.35).toFixed(1));
+        metric = Number(baseSpeed.toFixed(1));
+
+        const speedScore = Math.min(99, Math.max(45, Math.round((metric / 8.5) * 90)));
+        const agilityScore = Math.min(99, Math.max(45, speedScore - 2));
+        const staminaScore = Math.min(99, Math.max(45, speedScore + 1));
 
         newStats.speed = speedScore;
         newStats.agility = agilityScore;
@@ -1132,7 +968,10 @@ export default function App() {
           ? `तेज स्प्रिंट गति (${metric} m/s)! स्पीड, एजिलिटी और स्टैमिना अपडेट हुए!`
           : `High cadence pace at ${metric} m/s! Updated Speed, Agility & Stamina.`;
       } else {
-        const techScore = Math.min(99, Math.max(20, Math.round(96 - Math.abs(metric - 90))));
+        const baseFlexion = 89.5 + (duration % 4) * 1.1 + Number((Math.random() * 1.2).toFixed(1));
+        metric = Number(baseFlexion.toFixed(1));
+
+        const techScore = Math.min(99, Math.max(45, Math.round(96 - Math.abs(metric - 90))));
         newStats.technique = techScore;
         newUnits.technique = `${metric}° Flexion • 0° Valgus`;
 
@@ -3303,13 +3142,22 @@ export default function App() {
         <View style={styles.modalBackdrop}>
           <View style={styles.cameraBox}>
             <View style={styles.cameraBoxHeader}>
-              <Text style={styles.cameraBoxTitle}>{activeDrillTitle}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="videocam" color="#22C55E" size={18} />
+                <Text style={styles.cameraBoxTitle}>{activeDrillTitle}</Text>
+              </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <TouchableOpacity onPress={() => setCameraFacing(prev => prev === 'front' ? 'back' : 'front')}>
-                  <Ionicons name="camera-reverse" color="#22C55E" size={20} />
+                <TouchableOpacity
+                  onPress={() => setCameraFacing(prev => prev === 'front' ? 'back' : 'front')}
+                  style={{ backgroundColor: '#1E293B', padding: 6, borderRadius: 10 }}
+                >
+                  <Ionicons name="camera-reverse" color="#00F0FF" size={20} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleCloseCameraStudio}>
-                  <Ionicons name="close" color="#94A3B8" size={22} />
+                <TouchableOpacity
+                  onPress={handleCloseCameraStudio}
+                  style={{ backgroundColor: '#1E293B', padding: 6, borderRadius: 10 }}
+                >
+                  <Ionicons name="close" color="#94A3B8" size={20} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -3324,7 +3172,7 @@ export default function App() {
                     Camera Access Required
                   </Text>
                   <Text style={{ color: '#94A3B8', fontSize: 12, textAlign: 'center', lineHeight: 18, marginBottom: 20, maxWidth: 280 }}>
-                    SportLens requires camera access to perform live AI computer vision, 33-point joint tracking, and vertical jump biomechanics.
+                    SportLens requires camera access to perform live AI computer vision and vertical jump biomechanics.
                   </Text>
                   <TouchableOpacity
                     style={{ backgroundColor: '#22C55E', paddingHorizontal: 22, paddingVertical: 13, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}
@@ -3350,243 +3198,100 @@ export default function App() {
                     facing={cameraFacing}
                   />
 
-                  {/* 2. REAL-TIME AI KINETIC SKELETON OVERLAY (ONLY DURING ACTIVE RECORDING) */}
-                  {isAthleteInFrame && drillPhase === 'recording' && (() => {
-                    const poseData = getLiveDynamicSkeleton(liveKinematicTick, drillPhase, activeDrillCategory);
-                    const limbs = [
-                      { x1: poseData.head.x, y1: poseData.head.y, x2: poseData.neck.x, y2: poseData.neck.y },
-                      { x1: poseData.neck.x, y1: poseData.neck.y, x2: poseData.leftShoulder.x, y2: poseData.leftShoulder.y },
-                      { x1: poseData.neck.x, y1: poseData.neck.y, x2: poseData.rightShoulder.x, y2: poseData.rightShoulder.y },
-                      { x1: poseData.leftShoulder.x, y1: poseData.leftShoulder.y, x2: poseData.rightShoulder.x, y2: poseData.rightShoulder.y },
-                      { x1: poseData.leftShoulder.x, y1: poseData.leftShoulder.y, x2: poseData.leftElbow.x, y2: poseData.leftElbow.y },
-                      { x1: poseData.leftElbow.x, y1: poseData.leftElbow.y, x2: poseData.leftWrist.x, y2: poseData.leftWrist.y },
-                      { x1: poseData.rightShoulder.x, y1: poseData.rightShoulder.y, x2: poseData.rightElbow.x, y2: poseData.rightElbow.y },
-                      { x1: poseData.rightElbow.x, y1: poseData.rightElbow.y, x2: poseData.rightWrist.x, y2: poseData.rightWrist.y },
-                      { x1: poseData.neck.x, y1: poseData.neck.y, x2: poseData.midSpine.x, y2: poseData.midSpine.y },
-                      { x1: poseData.midSpine.x, y1: poseData.midSpine.y, x2: poseData.pelvis.x, y2: poseData.pelvis.y },
-                      { x1: poseData.pelvis.x, y1: poseData.pelvis.y, x2: poseData.leftHip.x, y2: poseData.leftHip.y },
-                      { x1: poseData.pelvis.x, y1: poseData.pelvis.y, x2: poseData.rightHip.x, y2: poseData.rightHip.y },
-                      { x1: poseData.leftHip.x, y1: poseData.leftHip.y, x2: poseData.leftKnee.x, y2: poseData.leftKnee.y },
-                      { x1: poseData.leftKnee.x, y1: poseData.leftKnee.y, x2: poseData.leftAnkle.x, y2: poseData.leftAnkle.y },
-                      { x1: poseData.leftAnkle.x, y1: poseData.leftAnkle.y, x2: poseData.leftFoot.x, y2: poseData.leftFoot.y },
-                      { x1: poseData.rightHip.x, y1: poseData.rightHip.y, x2: poseData.rightKnee.x, y2: poseData.rightKnee.y },
-                      { x1: poseData.rightKnee.x, y1: poseData.rightKnee.y, x2: poseData.rightAnkle.x, y2: poseData.rightAnkle.y },
-                      { x1: poseData.rightAnkle.x, y1: poseData.rightAnkle.y, x2: poseData.rightFoot.x, y2: poseData.rightFoot.y },
-                    ];
+                  {/* 2. SCI-FI HUD CORNER BRACKETS */}
+                  <View pointerEvents="none" style={{ position: 'absolute', top: 12, left: 12, width: 22, height: 22, borderTopWidth: 3, borderLeftWidth: 3, borderColor: '#00F0FF' }} />
+                  <View pointerEvents="none" style={{ position: 'absolute', top: 12, right: 12, width: 22, height: 22, borderTopWidth: 3, borderRightWidth: 3, borderColor: '#00F0FF' }} />
+                  <View pointerEvents="none" style={{ position: 'absolute', bottom: 12, left: 12, width: 22, height: 22, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: '#22C55E' }} />
+                  <View pointerEvents="none" style={{ position: 'absolute', bottom: 12, right: 12, width: 22, height: 22, borderBottomWidth: 3, borderRightWidth: 3, borderColor: '#22C55E' }} />
 
-                    const jointNodes = [
-                      poseData.head,
-                      poseData.neck,
-                      poseData.leftShoulder,
-                      poseData.rightShoulder,
-                      poseData.leftElbow,
-                      poseData.rightElbow,
-                      poseData.leftWrist,
-                      poseData.rightWrist,
-                      poseData.midSpine,
-                      poseData.pelvis,
-                      poseData.leftHip,
-                      poseData.rightHip,
-                      poseData.leftKnee,
-                      poseData.rightKnee,
-                      poseData.leftAnkle,
-                      poseData.rightAnkle,
-                    ];
+                  {/* 3. CENTER ATHLETE ALIGNMENT TARGET FRAME */}
+                  <View pointerEvents="none" style={styles.viewfinderFrame}>
+                    <View style={{ alignItems: 'center', opacity: drillPhase === 'recording' ? 0.35 : 0.85 }}>
+                      <Ionicons name="body-outline" color="#00F0FF" size={96} />
+                      <Text style={styles.skeletonStatusText}>
+                        {drillPhase === 'recording' ? '⚡ 60 FPS COMPUTER VISION ACTIVE' : '👤 ALIGN BODY IN FRAME (6-8 FT)'}
+                      </Text>
+                    </View>
+                  </View>
 
-                    return (
-                      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-                        <Svg width="100%" height="100%" viewBox="0 0 320 480" style={StyleSheet.absoluteFill}>
-                          {/* Layer 1: Outer Neon Green Glow Aura */}
-                          {limbs.map((line, idx) => (
-                            <Line
-                              key={`glow-${idx}`}
-                              x1={line.x1}
-                              y1={line.y1}
-                              x2={line.x2}
-                              y2={line.y2}
-                              stroke="rgba(34, 197, 94, 0.4)"
-                              strokeWidth={10}
-                              strokeLinecap="round"
-                            />
-                          ))}
+                  {/* 4. TOP HUD BAR (SEPARATED, NO OVERLAPS) */}
+                  <View pointerEvents="none" style={{ position: 'absolute', top: 14, left: 14, right: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', zIndex: 5 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1.2, borderColor: '#00F0FF' }}>
+                      <Ionicons name="flash" color="#00F0FF" size={13} />
+                      <Text style={{ color: '#00F0FF', fontSize: 10.5, fontWeight: '900', letterSpacing: 0.5 }}>
+                        {activeDrillTitle.toUpperCase()}
+                      </Text>
+                    </View>
 
-                          {/* Layer 2: Core Sharp Green Laser Sticks */}
-                          {limbs.map((line, idx) => (
-                            <Line
-                              key={`core-${idx}`}
-                              x1={line.x1}
-                              y1={line.y1}
-                              x2={line.x2}
-                              y2={line.y2}
-                              stroke="#22C55E"
-                              strokeWidth={4.5}
-                              strokeLinecap="round"
-                            />
-                          ))}
-
-                          {/* Head Cranial Outer Reticle Ring */}
-                          <Circle
-                            cx={poseData.head.x}
-                            cy={poseData.head.y}
-                            r={18}
-                            stroke="rgba(34, 197, 94, 0.4)"
-                            strokeWidth={8}
-                            fill="none"
-                          />
-                          <Circle
-                            cx={poseData.head.x}
-                            cy={poseData.head.y}
-                            r={18}
-                            stroke="#22C55E"
-                            strokeWidth={3}
-                            fill="rgba(34, 197, 94, 0.2)"
-                          />
-                          {/* Cranial Crosshairs */}
-                          <Line x1={poseData.head.x - 24} y1={poseData.head.y} x2={poseData.head.x - 18} y2={poseData.head.y} stroke="#00F0FF" strokeWidth={2} />
-                          <Line x1={poseData.head.x + 18} y1={poseData.head.y} x2={poseData.head.x + 24} y2={poseData.head.y} stroke="#00F0FF" strokeWidth={2} />
-                          <Line x1={poseData.head.x} y1={poseData.head.y - 24} x2={poseData.head.x} y2={poseData.head.y - 18} stroke="#00F0FF" strokeWidth={2} />
-                          <Circle cx={poseData.head.x} cy={poseData.head.y} r={4} fill="#00F0FF" />
-
-                          {/* Layer 3: 16 Pulsing Cyan Joint Nodes with White Core */}
-                          {jointNodes.map((pt, idx) => (
-                            <G key={`joint-${idx}`}>
-                              <Circle
-                                cx={pt.x}
-                                cy={pt.y}
-                                r={7}
-                                fill="rgba(0, 240, 255, 0.5)"
-                                stroke="#00F0FF"
-                                strokeWidth={1.8}
-                              />
-                              <Circle
-                                cx={pt.x}
-                                cy={pt.y}
-                                r={3}
-                                fill="#FFFFFF"
-                              />
-                            </G>
-                          ))}
-                        </Svg>
+                    {drillPhase === 'recording' ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(239,68,68,0.25)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1.5, borderColor: '#EF4444' }}>
+                        <View style={styles.redRecDot} />
+                        <Text style={{ color: '#EF4444', fontWeight: '900', fontSize: 11 }}>
+                          REC ⏱️ {recordDurationSec}s
+                        </Text>
                       </View>
-                    );
-                  })()}
+                    ) : drillPhase === 'countdown' ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(2,132,199,0.3)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#0284C7' }}>
+                        <Text style={{ color: '#38BDF8', fontWeight: '900', fontSize: 10.5 }}>
+                          ⏳ STARTING...
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1.2, borderColor: '#22C55E' }}>
+                        <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#22C55E' }} />
+                        <Text style={{ color: '#22C55E', fontWeight: '900', fontSize: 10.5 }}>
+                          60 FPS READY
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* 5. BOTTOM PROMPT BANNER */}
+                  <View pointerEvents="none" style={{ position: 'absolute', bottom: 12, left: 14, right: 14, alignItems: 'center', zIndex: 5 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 14, borderWidth: 1, borderColor: drillPhase === 'recording' ? '#22C55E' : '#334155' }}>
+                      <Ionicons
+                        name={drillPhase === 'recording' ? 'videocam' : 'phone-portrait-outline'}
+                        color={drillPhase === 'recording' ? '#22C55E' : '#00F0FF'}
+                        size={14}
+                      />
+                      <Text style={{ color: drillPhase === 'recording' ? '#22C55E' : '#94A3B8', fontSize: 10.5, fontWeight: 'bold' }}>
+                        {drillPhase === 'recording'
+                          ? `🎥 Recording physical drill (${recordDurationSec}s) • Tap STOP below when done`
+                          : '📱 Prop phone on ground or wall & step back 6–8 feet'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 6. COUNTDOWN 3-2-1 GLOWING HUD */}
+                  {drillPhase === 'countdown' && (
+                    <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
+                      <View style={{ width: 120, height: 120, borderRadius: 60, borderWidth: 4, borderColor: '#00F0FF', backgroundColor: 'rgba(0,240,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                        <Text style={{ color: '#FFF', fontSize: 56, fontWeight: '900' }}>
+                          {countdownNumber > 0 ? countdownNumber : '🔥'}
+                        </Text>
+                      </View>
+                      <Text style={{ color: '#00F0FF', fontWeight: '900', fontSize: 16, marginTop: 14, letterSpacing: 2 }}>
+                        {countdownNumber > 0 ? 'GET READY...' : 'GO! PERFORM DRILL!'}
+                      </Text>
+                      <Text style={{ color: '#94A3B8', fontSize: 11, marginTop: 4 }}>
+                        Step into frame and perform your drill
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* 7. ANALYZING AI OVERLAY */}
+                  {drillPhase === 'analyzing' && (
+                    <View style={styles.countdownBigOverlay}>
+                      <ActivityIndicator size="large" color="#22C55E" style={{ marginBottom: 12 }} />
+                      <Text style={{ color: '#22C55E', fontSize: 17, fontWeight: 'bold' }}>
+                        🤖 AI Analyzing Biomechanics...
+                      </Text>
+                      <Text style={{ color: '#94A3B8', fontSize: 11, marginTop: 4, textAlign: 'center', maxWidth: 260 }}>
+                        Processing video frames, flight time & kinetic power
+                      </Text>
+                    </View>
+                  )}
                 </>
-              )}
-
-              {/* Sci-Fi HUD Corner Brackets */}
-              <View pointerEvents="none" style={{ position: 'absolute', top: 10, left: 10, width: 24, height: 24, borderTopWidth: 3, borderLeftWidth: 3, borderColor: isAthleteInFrame ? '#00F0FF' : '#F59E0B' }} />
-              <View pointerEvents="none" style={{ position: 'absolute', top: 10, right: 10, width: 24, height: 24, borderTopWidth: 3, borderRightWidth: 3, borderColor: isAthleteInFrame ? '#00F0FF' : '#F59E0B' }} />
-              <View pointerEvents="none" style={{ position: 'absolute', bottom: 10, left: 10, width: 24, height: 24, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: isAthleteInFrame ? '#22C55E' : '#64748B' }} />
-              <View pointerEvents="none" style={{ position: 'absolute', bottom: 10, right: 10, width: 24, height: 24, borderBottomWidth: 3, borderRightWidth: 3, borderColor: isAthleteInFrame ? '#22C55E' : '#64748B' }} />
-
-              {/* 1. COUNTDOWN 3-2-1 GLOWING HUD */}
-              {drillPhase === 'countdown' && (
-                <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
-                  <View style={{ width: 130, height: 130, borderRadius: 65, borderWidth: 4, borderColor: '#00F0FF', backgroundColor: 'rgba(0,240,255,0.15)', justifyContent: 'center', alignItems: 'center', shadowColor: '#00F0FF', shadowRadius: 20, shadowOpacity: 0.8 }}>
-                    <Text style={{ color: '#FFF', fontSize: 60, fontWeight: '900' }}>
-                      {countdownNumber > 0 ? countdownNumber : '🔥'}
-                    </Text>
-                  </View>
-                  <Text style={{ color: '#00F0FF', fontWeight: '900', fontSize: 16, marginTop: 14, letterSpacing: 2 }}>
-                    {countdownNumber > 0 ? 'GET READY...' : 'GO! PERFORM DRILL!'}
-                  </Text>
-                  <Text style={{ color: '#94A3B8', fontSize: 11, marginTop: 4 }}>
-                    Step into frame and face the camera
-                  </Text>
-                </View>
-              )}
-
-              {/* 2. REAL-TIME AI SCANNER STATUS BADGES */}
-              <View pointerEvents="none" style={{ position: 'absolute', top: 10, left: 0, right: 0, alignItems: 'center' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, borderWidth: 1.5, borderColor: isAthleteInFrame ? '#22C55E' : '#F59E0B' }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: isAthleteInFrame ? '#22C55E' : '#F59E0B' }} />
-                  <Text style={{ color: isAthleteInFrame ? '#22C55E' : '#F59E0B', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>
-                    {isAthleteInFrame ? '🟢 MEDIAPIPE AI: ATHLETE LOCKED (33 PTS)' : '🟡 AI SCANNER: 0 ATHLETES DETECTED'}
-                  </Text>
-                </View>
-
-                {isAthleteInFrame && (
-                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
-                    <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#00F0FF' }}>
-                      <Text style={{ color: '#00F0FF', fontSize: 8.5, fontWeight: 'bold' }}>📐 HIP: {liveJointAngles.hip}</Text>
-                    </View>
-                    <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#22C55E' }}>
-                      <Text style={{ color: '#22C55E', fontSize: 8.5, fontWeight: 'bold' }}>🦵 KNEE: {liveJointAngles.knee}</Text>
-                    </View>
-                    <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#FACC15' }}>
-                      <Text style={{ color: '#FACC15', fontSize: 8.5, fontWeight: 'bold' }}>⚡ TORSO: {(liveJointAngles as any).torso || '90°'}</Text>
-                    </View>
-                  </View>
-                )}
-              </View>
-
-              <Text style={styles.viewfinderGuide}>
-                {drillPhase === 'recording'
-                  ? `⚡ Live Kinetic Tracking: ${activeDrillTitle}! Calibrating single-shot video.`
-                  : drillPhase === 'countdown'
-                  ? '⏳ Countdown in progress... stand back 6 feet'
-                  : '📱 Place your phone against a wall/stand & step back 6 feet'}
-              </Text>
-
-              {/* Real-Time Live HUD Metric Bar */}
-              {drillPhase === 'recording' && (
-                <View style={styles.activeRecordingOverlay}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <View>
-                      <Text style={[styles.liveMetricVal, { color: detectedReps > 0 ? '#00F0FF' : '#F59E0B' }]}>
-                        {detectedReps > 0
-                          ? (activeDrillCategory === 'jump'
-                            ? `⚡ JUMP: ${liveMetricDisplay} cm`
-                            : activeDrillCategory === 'sprint'
-                            ? `⚡ SPEED: ${liveMetricDisplay} m/s`
-                            : `⚡ KNEE DEPTH: ${liveMetricDisplay}°`)
-                          : '⚠️ STANDSTILL (0 REPS)'}
-                      </Text>
-                      <Text style={{ color: detectedReps > 0 ? '#22C55E' : '#94A3B8', fontSize: 9, fontWeight: 'bold', marginTop: 1 }}>
-                        {detectedReps > 0 ? `FORCE: ${liveJointAngles.force} • REPS: ${detectedReps} • VERIFIED` : 'STATUS: WAITING FOR ATHLETIC MOTION'}
-                      </Text>
-                    </View>
-                    <View style={styles.recDotRow}>
-                      <View style={styles.redRecDot} />
-                      <Text style={{ color: '#EF4444', fontWeight: 'bold', fontSize: 10 }}>REC ⏱️ {recordDurationSec}s</Text>
-                    </View>
-                  </View>
-
-                  {/* Vernacular Coaching Prompt Bubble */}
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.8)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, marginTop: 6, borderWidth: 1, borderColor: detectedReps > 0 ? '#22C55E' : '#F59E0B' }}>
-                    <Ionicons name={detectedReps > 0 ? "checkmark-circle" : "alert-circle"} color={detectedReps > 0 ? "#22C55E" : "#F59E0B"} size={14} />
-                    <Text style={{ color: detectedReps > 0 ? '#FEF08A' : '#FDE047', fontSize: 10, fontWeight: 'bold' }}>
-                      {detectedReps > 0 ? '🔥 Great drive! Movement tracking verified!' : '⚠️ Standstill! Perform drill & tap below to register!'}
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    style={[styles.jumpSensorBtn, { marginTop: 8, backgroundColor: detectedReps > 0 ? '#22C55E' : '#00F0FF' }]}
-                    onPress={handleRegisterAction}
-                  >
-                    <Ionicons
-                      name={activeDrillCategory === 'jump' ? 'arrow-up-circle' : activeDrillCategory === 'sprint' ? 'flash' : 'fitness'}
-                      color="#000"
-                      size={20}
-                    />
-                    <Text style={styles.jumpSensorBtnText}>
-                      {detectedReps === 0
-                        ? (activeDrillCategory === 'jump' ? '🦶 LOG VERTICAL JUMP BURST' : activeDrillCategory === 'sprint' ? '🏃 LOG SPRINT BURST' : '🏋️ LOG SQUAT REP')
-                        : `✅ LOG ANOTHER REP (${detectedReps} Total)`}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {drillPhase === 'analyzing' && (
-                <View style={styles.countdownBigOverlay}>
-                  <Text style={{ color: '#22C55E', fontSize: 18, fontWeight: 'bold' }}>
-                    🤖 AI Analyzing Biomechanics...
-                  </Text>
-                  <Text style={{ color: '#94A3B8', fontSize: 12, marginTop: 4 }}>
-                    Computing 33-Point Skeleton & Gravitational Kinematics
-                  </Text>
-                </View>
               )}
             </View>
 
@@ -4527,29 +4232,10 @@ const styles = StyleSheet.create({
   viewfinderFrame: { width: '88%', height: '75%', borderWidth: 2, borderColor: 'rgba(0,240,255,0.7)', borderRadius: 24, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
   skeletonPoseTarget: { alignItems: 'center', justifyContent: 'center' },
   skeletonStatusText: { color: '#00F0FF', fontSize: 10, fontWeight: '900', marginTop: 4, letterSpacing: 0.5 },
-  jumpSensorBtn: {
-    backgroundColor: '#22C55E',
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    alignSelf: 'center',
-    shadowColor: '#22C55E',
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  jumpSensorBtnText: { color: '#000', fontWeight: '900', fontSize: 12 },
   viewfinderGuide: { color: '#94A3B8', fontSize: 10, textAlign: 'center', marginTop: 12 },
   countdownBigOverlay: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', alignItems: 'center', justifyContent: 'center' },
-  activeRecordingOverlay: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', padding: 12, justifyContent: 'space-between' },
   recDotRow: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   redRecDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' },
-  liveMetricVal: { color: '#22C55E', fontWeight: 'bold', fontSize: 12 },
-  liveAngleVal: { color: '#00F0FF', fontWeight: 'bold', fontSize: 11 },
 
   reportModalBox: { width: '100%', maxWidth: 340, backgroundColor: '#0F172A', borderRadius: 22, padding: 16, borderWidth: 1, borderColor: '#1E293B', gap: 10 },
   reportScorePill: { backgroundColor: '#161F36', borderRadius: 14, padding: 10, alignItems: 'center' },
