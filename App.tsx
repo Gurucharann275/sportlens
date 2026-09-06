@@ -30,40 +30,56 @@ import { ALL_SPORTS, ALL_STATES, INDIA_STATES_AND_DISTRICTS } from './indiaGeoDa
 import { LANGUAGES, LanguageCode, I18N } from './i18nData';
 
 // ================= REAL-TIME GOOGLE MEDIAPIPE POSE COMPUTER VISION HTML =================
-const getMediaPipePoseHtml = (facing: 'front' | 'back') => `
+const getMediaPipePoseHtml = (facing: 'front' | 'back' = 'front') => `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body, html { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: -apple-system, Roboto, sans-serif; }
-    #container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #050811; }
+    html, body { width: 100%; height: 100%; background: #050811; overflow: hidden; font-family: -apple-system, Roboto, sans-serif; }
+    #container { position: relative; width: 100%; height: 100%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #050811; }
     video { position: absolute; width: 100%; height: 100%; object-fit: cover; ${facing === 'front' ? 'transform: scaleX(-1);' : ''} }
-    canvas { position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 2; ${facing === 'front' ? 'transform: scaleX(-1);' : ''} }
-    #loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #070B14; color: #00F0FF; font-size: 13px; font-weight: bold; z-index: 10; letter-spacing: 1px; }
-    .spinner { width: 38px; height: 38px; border: 3.5px solid rgba(0,240,255,0.2); border-top-color: #00F0FF; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
+    canvas { position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 2; pointer-events: none; ${facing === 'front' ? 'transform: scaleX(-1);' : ''} }
+    #loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #070B14; color: #00F0FF; font-size: 12px; font-weight: bold; z-index: 10; letter-spacing: 1px; }
+    .spinner { width: 36px; height: 36px; border: 3px solid rgba(0,240,255,0.2); border-top-color: #00F0FF; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    #errorBox { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(5,8,17,0.96); color: #EF4444; z-index: 20; padding: 20px; text-align: center; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 </head>
 <body>
   <div id="container">
     <div id="loading">
       <div class="spinner"></div>
-      <div>⚡ INITIALIZING MEDIAPIPE AI...</div>
-      <div style="color: #64748B; font-size: 10px; margin-top: 6px;">Loading Neural Network Weights</div>
+      <div>⚡ INITIALIZING SPORTLENS AI VISION...</div>
+      <div style="color: #64748B; font-size: 10px; margin-top: 6px;">Accessing Camera Hardware</div>
     </div>
     <video id="webcam" playsinline autoplay muted></video>
     <canvas id="output_canvas"></canvas>
+    <div id="errorBox">
+      <div style="font-size: 36px; margin-bottom: 8px;">📷</div>
+      <div id="errorTitle" style="font-weight: bold; font-size: 14px; color: #EF4444;">CAMERA ACCESS REQUIRED</div>
+      <div id="errorDesc" style="font-size: 11px; color: #94A3B8; margin-top: 6px; max-width: 280px; line-height: 16px;">
+        Please allow camera permission in Android settings to start live AI computer vision.
+      </div>
+    </div>
   </div>
   <script>
     const video = document.getElementById('webcam');
     const canvas = document.getElementById('output_canvas');
     const ctx = canvas.getContext('2d');
     const loadingDiv = document.getElementById('loading');
+    const errorBox = document.getElementById('errorBox');
+    const errorDesc = document.getElementById('errorDesc');
+
+    function sendToRN(payload) {
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(JSON.stringify(payload));
+      }
+    }
 
     const POSE_CONNECTIONS = [
       [11, 12], // Clavicle / Shoulders
@@ -90,8 +106,8 @@ const getMediaPipePoseHtml = (facing: 'front' | 'back') => `
     let isJumping = false;
     let jumpStart = 0;
 
-    function onResults(results) {
-      if (loadingDiv.style.display !== 'none') {
+    function onPoseResults(results) {
+      if (loadingDiv && loadingDiv.style.display !== 'none') {
         loadingDiv.style.display = 'none';
       }
 
@@ -102,13 +118,15 @@ const getMediaPipePoseHtml = (facing: 'front' | 'back') => `
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       const landmarks = results.poseLandmarks;
+      // Real athlete detection verification: Shoulders and torso landmarks must be visible
       const isDetected = landmarks && landmarks.length >= 29 && 
-        ((landmarks[11] && landmarks[11].visibility > 0.45) || (landmarks[12] && landmarks[12].visibility > 0.45));
+        ((landmarks[11] && landmarks[11].visibility > 0.45) || (landmarks[12] && landmarks[12].visibility > 0.45)) &&
+        ((landmarks[23] && landmarks[23].visibility > 0.35) || (landmarks[24] && landmarks[24].visibility > 0.35));
 
       if (isDetected) {
         // LAYER 1: OUTER NEON GLOW AURA FOR ALL LIMBS
-        ctx.lineWidth = 12;
-        ctx.strokeStyle = 'rgba(0, 255, 102, 0.45)';
+        ctx.lineWidth = 11;
+        ctx.strokeStyle = 'rgba(34, 197, 94, 0.45)';
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         for (const [i, j] of POSE_CONNECTIONS) {
@@ -122,9 +140,9 @@ const getMediaPipePoseHtml = (facing: 'front' | 'back') => `
           }
         }
 
-        // LAYER 2: SHARP BRIGHT CORE LASER STICKS
-        ctx.lineWidth = 4.5;
-        ctx.strokeStyle = '#00FF66';
+        // LAYER 2: SHARP CORE GREEN LASER STICKS
+        ctx.lineWidth = 4.2;
+        ctx.strokeStyle = '#22C55E';
         for (const [i, j] of POSE_CONNECTIONS) {
           const p1 = landmarks[i];
           const p2 = landmarks[j];
@@ -136,25 +154,25 @@ const getMediaPipePoseHtml = (facing: 'front' | 'back') => `
           }
         }
 
-        // CYAN KEYPOINT NODES (14 Pivot Joints)
+        // LAYER 3: 14 CYAN JOINT SENSORS WITH WHITE CORE
         const KEY_POINTS = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
         for (const idx of KEY_POINTS) {
           const pt = landmarks[idx];
           if (pt && pt.visibility > 0.35) {
             const x = pt.x * canvas.width;
             const y = pt.y * canvas.height;
-            // Cyan halo
+            // Cyan Halo
             ctx.beginPath();
-            ctx.arc(x, y, 7, 0, 2 * Math.PI);
+            ctx.arc(x, y, 6.5, 0, 2 * Math.PI);
             ctx.fillStyle = 'rgba(0, 240, 255, 0.55)';
             ctx.fill();
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1.8;
             ctx.strokeStyle = '#00F0FF';
             ctx.stroke();
 
-            // White center pip
+            // White Core Pip
             ctx.beginPath();
-            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.arc(x, y, 2.5, 0, 2 * Math.PI);
             ctx.fillStyle = '#FFFFFF';
             ctx.fill();
           }
@@ -163,14 +181,14 @@ const getMediaPipePoseHtml = (facing: 'front' | 'back') => `
         // KINEMATICS & ANGLES
         const kneeL = calculateAngle(landmarks[23], landmarks[25], landmarks[27]);
         const hipL = calculateAngle(landmarks[11], landmarks[23], landmarks[25]);
-        const spineAngle = Math.round(90 - Math.abs((landmarks[11].x - landmarks[23].x) * 50));
+        const spineAngle = Math.round(90 - Math.abs((landmarks[11].x - landmarks[23].x) * 45));
 
         // JUMP / SQUAT RECOGNITION
         const hipY = (landmarks[23].y + landmarks[24].y) / 2;
         if (baselineHipY === null) baselineHipY = hipY;
 
         let detectedBurst = null;
-        if (hipY < baselineHipY - 0.08 && !isJumping) {
+        if (hipY < baselineHipY - 0.075 && !isJumping) {
           isJumping = true;
           jumpStart = Date.now();
           minHipY = hipY;
@@ -180,76 +198,120 @@ const getMediaPipePoseHtml = (facing: 'front' | 'back') => `
             isJumping = false;
             const flightSec = (Date.now() - jumpStart) / 1000;
             const jumpCm = Math.round(122.5 * flightSec * flightSec);
-            if (jumpCm >= 15 && jumpCm <= 120) {
+            if (jumpCm >= 15 && jumpCm <= 125) {
               detectedBurst = { jumpCm, flightSec: flightSec.toFixed(2) };
             }
           }
         }
 
-        // Post to React Native
         const now = Date.now();
-        if (now - lastPost > 60 || detectedBurst) {
+        if (now - lastPost > 50 || detectedBurst) {
           lastPost = now;
-          if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'POSE_UPDATE',
-              detected: true,
-              kneeAngle: kneeL + '°',
-              hipAngle: hipL + '°',
-              torsoAngle: spineAngle + '°',
-              burst: detectedBurst
-            }));
-          }
+          sendToRN({
+            type: 'POSE_UPDATE',
+            detected: true,
+            kneeAngle: kneeL + '°',
+            hipAngle: hipL + '°',
+            torsoAngle: spineAngle + '°',
+            burst: detectedBurst
+          });
         }
       } else {
-        // Empty frame / zero humans detected
+        // EMPTY FRAME -> Canvas is 100% clean (0 lines, 0 dots)
         const now = Date.now();
-        if (now - lastPost > 180) {
+        if (now - lastPost > 160) {
           lastPost = now;
-          if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'POSE_UPDATE',
-              detected: false
-            }));
-          }
+          sendToRN({
+            type: 'POSE_UPDATE',
+            detected: false
+          });
         }
       }
       ctx.restore();
     }
 
-    const pose = new Pose({
-      locateFile: (file) => 'https://cdn.jsdelivr.net/npm/@mediapipe/pose/' + file
-    });
-    pose.setOptions({
-      modelComplexity: 0,
-      smoothLandmarks: true,
-      enableSegmentation: false,
-      minDetectionConfidence: 0.48,
-      minTrackingConfidence: 0.48
-    });
-    pose.onResults(onResults);
+    // Initialize MediaPipe Pose Neural Network
+    let poseInstance = null;
+    try {
+      if (typeof Pose !== 'undefined') {
+        poseInstance = new Pose({
+          locateFile: (file) => 'https://cdn.jsdelivr.net/npm/@mediapipe/pose/' + file
+        });
+        poseInstance.setOptions({
+          modelComplexity: 0,
+          smoothLandmarks: true,
+          enableSegmentation: false,
+          minDetectionConfidence: 0.45,
+          minTrackingConfidence: 0.45
+        });
+        poseInstance.onResults(onPoseResults);
+      }
+    } catch (e) {
+      console.warn('MediaPipe Pose init warning:', e);
+    }
 
-    navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: '${facing === 'front' ? 'user' : 'environment'}',
-        width: { ideal: 640 },
-        height: { ideal: 480 }
-      },
-      audio: false
-    }).then((stream) => {
-      video.srcObject = stream;
-      video.play();
-      const camera = new Camera(video, {
-        onFrame: async () => {
-          await pose.send({ image: video });
-        },
-        width: 640,
-        height: 480
-      });
-      camera.start();
-    }).catch((e) => {
-      loadingDiv.innerHTML = '<div style="color:#EF4444;text-align:center;padding:20px;">⚠️ CAMERA ACCESS REQUIRED<br><span style="font-size:10px;color:#94A3B8;">Please grant camera permissions to enable AI pose tracking</span></div>';
-    });
+    // Launch WebRTC Hardware Camera
+    async function startCamera() {
+      try {
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: '${facing === 'front' ? 'user' : 'environment'}',
+              width: { ideal: 640 },
+              height: { ideal: 480 }
+            },
+            audio: false
+          });
+        } catch (e1) {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
+
+        video.srcObject = stream;
+        await video.play();
+
+        if (loadingDiv) loadingDiv.style.display = 'none';
+        sendToRN({ type: 'CAMERA_READY' });
+
+        if (poseInstance && typeof Camera !== 'undefined') {
+          const cam = new Camera(video, {
+            onFrame: async () => {
+              try {
+                if (video.readyState >= 2) {
+                  await poseInstance.send({ image: video });
+                }
+              } catch (err) {}
+            },
+            width: 640,
+            height: 480
+          });
+          cam.start();
+        } else {
+          function animationLoop() {
+            if (poseInstance && video.readyState >= 2) {
+              poseInstance.send({ image: video }).catch(() => {});
+            }
+            requestAnimationFrame(animationLoop);
+          }
+          requestAnimationFrame(animationLoop);
+        }
+      } catch (err) {
+        console.error('Camera Hardware Error:', err);
+        if (loadingDiv) loadingDiv.style.display = 'none';
+        errorBox.style.display = 'flex';
+        errorDesc.innerText = err.message || 'Camera permission denied or camera unavailable.';
+        sendToRN({ type: 'CAMERA_ERROR', error: err.message });
+      }
+    }
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      startCamera();
+    } else {
+      if (loadingDiv) loadingDiv.style.display = 'none';
+      errorBox.style.display = 'flex';
+      errorDesc.innerText = 'Camera mediaDevices API not available in this WebView.';
+      sendToRN({ type: 'CAMERA_ERROR', error: 'mediaDevices not supported' });
+    }
   </script>
 </body>
 </html>
@@ -362,6 +424,15 @@ export default function App() {
   const [isLangModalOpen, setIsLangModalOpen] = useState(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState<'front' | 'back'>('front');
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+
+  // Auto-request camera permission on opening camera studio
+  useEffect(() => {
+    if (isCameraModalOpen && (!cameraPermission || !cameraPermission.granted)) {
+      requestCameraPermission();
+    }
+  }, [isCameraModalOpen, cameraPermission]);
 
   // Active Athlete Profile
   const [athlete, setAthlete] = useState({
@@ -570,9 +641,6 @@ export default function App() {
     };
   };
 
-  // Camera permissions & facing
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
-  const [cameraFacing, setCameraFacing] = useState<'front' | 'back'>('front');
 
   // ================= RECRUITER POV STATE & 4-TIER VERIFICATION SYSTEM =================
   const [recruiterTier, setRecruiterTier] = useState<'govt' | 'academy' | 'independent'>('govt');
@@ -3542,44 +3610,81 @@ export default function App() {
             </View>
 
             <View style={[styles.viewfinderArea, { backgroundColor: '#050811', overflow: 'hidden' }]}>
-              {/* REAL-TIME GOOGLE MEDIAPIPE COMPUTER VISION CAMERA PIPELINE */}
-              <WebView
-                originWhitelist={['*']}
-                source={{ html: getMediaPipePoseHtml(cameraFacing) }}
-                style={StyleSheet.absoluteFill}
-                allowsInlineMediaPlayback={true}
-                mediaPlaybackRequiresUserAction={false}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                scrollEnabled={false}
-                onMessage={(event) => {
-                  try {
-                    const data = JSON.parse(event.nativeEvent.data);
-                    if (data.type === 'POSE_UPDATE') {
-                      if (data.detected !== isAthleteInFrame) {
-                        setIsAthleteInFrame(data.detected);
+              {cameraPermission && !cameraPermission.granted ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#050811' }}>
+                  <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(0,240,255,0.12)', justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 1.5, borderColor: '#00F0FF' }}>
+                    <Ionicons name="camera-outline" color="#00F0FF" size={36} />
+                  </View>
+                  <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '900', textAlign: 'center', marginBottom: 8 }}>
+                    Camera Access Required
+                  </Text>
+                  <Text style={{ color: '#94A3B8', fontSize: 12, textAlign: 'center', lineHeight: 18, marginBottom: 20, maxWidth: 280 }}>
+                    SportLens requires camera access to perform live AI computer vision, 33-point joint tracking, and vertical jump biomechanics.
+                  </Text>
+                  <TouchableOpacity
+                    style={{ backgroundColor: '#22C55E', paddingHorizontal: 22, paddingVertical: 13, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                    onPress={async () => {
+                      const res = await requestCameraPermission();
+                      if (!res.granted) {
+                        Alert.alert(
+                          'Camera Permission',
+                          'Please grant camera permission for SportLens in your Android device settings.'
+                        );
+                      }
+                    }}
+                  >
+                    <Ionicons name="shield-checkmark" color="#000" size={18} />
+                    <Text style={{ color: '#000', fontWeight: '900', fontSize: 13 }}>GRANT CAMERA PERMISSION</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                /* REAL-TIME GOOGLE MEDIAPIPE COMPUTER VISION CAMERA PIPELINE */
+                <WebView
+                  originWhitelist={['*']}
+                  source={{
+                    html: getMediaPipePoseHtml(cameraFacing),
+                    baseUrl: 'https://sportlens.app',
+                  }}
+                  style={StyleSheet.absoluteFill}
+                  allowsInlineMediaPlayback={true}
+                  mediaPlaybackRequiresUserAction={false}
+                  javaScriptEnabled={true}
+                  domStorageEnabled={true}
+                  scrollEnabled={false}
+                  androidLayerType="hardware"
+                  mediaCapturePermissionGrantType="grant"
+                  onPermissionRequest={(request) => {
+                    request.grant(request.resources);
+                  }}
+                  onMessage={(event) => {
+                    try {
+                      const data = JSON.parse(event.nativeEvent.data);
+                      if (data.type === 'POSE_UPDATE') {
+                        if (data.detected !== isAthleteInFrame) {
+                          setIsAthleteInFrame(data.detected);
+                          if (data.detected) {
+                            try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch (e) {}
+                          }
+                        }
                         if (data.detected) {
-                          try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch (e) {}
+                          setLiveJointAngles(prev => ({
+                            ...prev,
+                            knee: data.kneeAngle || prev.knee,
+                            hip: data.hipAngle || prev.hip,
+                            torso: data.torsoAngle || prev.torso,
+                            symmetry: '98.8%',
+                          }));
+                          if (data.burst && data.burst.jumpCm) {
+                            setLiveMetricDisplay(data.burst.jumpCm);
+                            setDetectedReps(prev => prev + 1);
+                            try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e) {}
+                          }
                         }
                       }
-                      if (data.detected) {
-                        setLiveJointAngles(prev => ({
-                          ...prev,
-                          knee: data.kneeAngle || prev.knee,
-                          hip: data.hipAngle || prev.hip,
-                          torso: data.torsoAngle || prev.torso,
-                          symmetry: '98.8%',
-                        }));
-                        if (data.burst && data.burst.jumpCm) {
-                          setLiveMetricDisplay(data.burst.jumpCm);
-                          setDetectedReps(prev => prev + 1);
-                          try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e) {}
-                        }
-                      }
-                    }
-                  } catch (e) {}
-                }}
-              />
+                    } catch (e) {}
+                  }}
+                />
+              )}
 
               {/* Sci-Fi HUD Corner Brackets */}
               <View pointerEvents="none" style={{ position: 'absolute', top: 10, left: 10, width: 24, height: 24, borderTopWidth: 3, borderLeftWidth: 3, borderColor: isAthleteInFrame ? '#00F0FF' : '#F59E0B' }} />
