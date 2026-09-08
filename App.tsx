@@ -969,15 +969,18 @@ export default function App() {
         setRecordDurationSec(0);
 
         // ── START REAL VIDEO RECORDING ON CAMERA (CACHE STREAM) ──
-        if (cameraRef.current) {
+        if (cameraRef.current && typeof cameraRef.current.recordAsync === 'function') {
           try {
-            cameraRef.current.recordAsync({ maxDuration: 60, mute: true })
-              .then((result: any) => {
-                if (result?.uri) {
-                  recordedVideoUriRef.current = result.uri;
-                }
-              })
-              .catch(() => {});
+            const recPromise = cameraRef.current.recordAsync({ maxDuration: 60, mute: true });
+            if (recPromise && typeof recPromise.then === 'function') {
+              recPromise
+                .then((result: any) => {
+                  if (result?.uri) {
+                    recordedVideoUriRef.current = result.uri;
+                  }
+                })
+                .catch(() => {});
+            }
           } catch (e) {}
         }
 
@@ -3402,6 +3405,7 @@ export default function App() {
                     style={StyleSheet.absoluteFill}
                     facing={cameraFacing}
                     mode="video"
+                    mute={true}
                   />
 
                   {/* 1b. 14-JOINT BIOMECHANICAL KINETIC SKELETAL HUD OVERLAY */}
