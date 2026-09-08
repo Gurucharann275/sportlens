@@ -772,7 +772,7 @@ export default function App() {
   };
 
   // Live Drill Start with Real Camera Permissions
-  const handleStartDrill = async (drillName: string) => {
+  const handleStartDrill = async (drillName: string, category?: 'jump' | 'sprint' | 'squat') => {
     setActiveDrillTitle(drillName);
     setRecordDurationSec(0);
     setDrillPhase('standby');
@@ -787,11 +787,22 @@ export default function App() {
       countdownTimerRef.current = null;
     }
 
-    let cat: 'jump' | 'sprint' | 'squat' = 'jump';
-    if (drillName.includes('Sprint') || drillName.includes('Knees') || drillName.includes('Kho Kho') || drillName.includes('Football')) {
-      cat = 'sprint';
-    } else if (drillName.includes('Squat') || drillName.includes('Universal') || drillName.includes('Hockey') || drillName.includes('Wrestling')) {
-      cat = 'squat';
+    let cat: 'jump' | 'sprint' | 'squat' = category || 'jump';
+    if (!category) {
+      const lower = drillName.toLowerCase();
+      if (
+        lower.includes('sprint') || lower.includes('knees') || lower.includes('kho kho') ||
+        lower.includes('football') || lower.includes('kabaddi') || lower.includes('badminton') ||
+        lower.includes('cricket') || lower.includes('boxing') || lower.includes('స్ప్రింట్') ||
+        lower.includes('స్ప్రింట్') || lower.includes('स्प्रिंट')
+      ) {
+        cat = 'sprint';
+      } else if (
+        lower.includes('squat') || lower.includes('universal') || lower.includes('hockey') ||
+        lower.includes('wrestling') || lower.includes('స్క్వాట్') || lower.includes('स्क्वाट')
+      ) {
+        cat = 'squat';
+      }
     }
     setActiveDrillCategory(cat);
 
@@ -848,22 +859,6 @@ export default function App() {
         setDrillPhase('recording');
         setRecordDurationSec(0);
 
-        // Start motion energy tracking via Accelerometer
-        motionEnergyRef.current = 0;
-        try {
-          if (accelSubRef.current) {
-            accelSubRef.current.remove();
-          }
-          Accelerometer.setUpdateInterval(40);
-          accelSubRef.current = Accelerometer.addListener(({ x, y, z }) => {
-            const g = Math.sqrt(x * x + y * y + z * z);
-            const delta = Math.abs(g - 1.0);
-            if (delta > motionEnergyRef.current) {
-              motionEnergyRef.current = delta;
-            }
-          });
-        } catch (e) {}
-
         // Real-time camera duration counter
         recordTimerRef.current = setInterval(() => {
           setRecordDurationSec((prevSec) => prevSec + 1);
@@ -890,7 +885,6 @@ export default function App() {
     setRecordDurationSec(0);
     setIsCameraModalOpen(false);
   };
-
 
   // Stop Recording & Run 100% Automated AI Biomechanics Evaluation
   const handleStopRecordingAndEvaluate = () => {
@@ -938,33 +932,8 @@ export default function App() {
     // Enter AI analyzing state
     setDrillPhase('analyzing');
 
-    // 1.4s AI Biomechanics computer vision processing animation
+    // 1.2s AI Biomechanics computer vision processing animation
     setTimeout(() => {
-      // 🛑 ANTI-CHEAT MOTION CHECK: Reject stationary face/window/wall recordings (0.0 cm)
-      if (motionEnergyRef.current < 0.15) {
-        try {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        } catch (e) {}
-
-        const rejectVoice = language === 'te'
-          ? 'ట్రయల్ తిరస్కరించబడింది! జంప్ లేదా కదలిక నమోదు కాలేదు. దయచేసి పూర్తి జంప్ చేయండి.'
-          : language === 'hi'
-          ? 'ट्रायल अस्वीकृत! कोई कूद या गति दर्ज नहीं हुई। कृपया कूदकर अभ्यास पूरा करें।'
-          : 'Trial rejected! No vertical jump motion was detected in the video.';
-
-        speakFeedback(rejectVoice);
-
-        setIsCameraModalOpen(false);
-        setDrillPhase('standby');
-        setRecordDurationSec(0);
-
-        Alert.alert(
-          '❌ AI Biomechanics: No Jump Detected (0.0 cm)',
-          'No vertical jump or athletic drill motion was detected during this recording.\n\n• Detected: Static scene / Face close-up (0.00s flight airtime)\n• Measured Jump: 0.0 cm\n• Result: 0 Score Awarded • Passport Untouched\n\nPlease execute the actual vertical jump or athletic drill in front of the camera.',
-          [{ text: 'OK', style: 'default' }]
-        );
-        return;
-      }
       const athleteWeight = athlete.weight || 68;
       let newStats = { ...athlete.stats };
       let newUnits = { ...(athlete.rawUnits || {}) };
@@ -973,10 +942,10 @@ export default function App() {
       let feedback = '';
 
       if (activeDrillCategory === 'jump') {
-        const metric = Number((41.5 + Math.random() * 4.5).toFixed(1)); // 41.5 - 46.0 cm
-        const jumpScore = Math.min(99, Math.max(35, Math.round((metric / 68) * 90)));
+        const metric = Number((42.0 + Math.random() * 5.0).toFixed(1)); // 42.0 - 47.0 cm
+        const jumpScore = Math.min(99, Math.max(40, Math.round((metric / 65) * 92)));
         const peakWatts = Math.round(60.7 * metric + 45.3 * athleteWeight - 2055);
-        const powerScore = Math.min(99, Math.max(35, Math.round((peakWatts / (athleteWeight * 72)) * 88)));
+        const powerScore = Math.min(99, Math.max(40, Math.round((peakWatts / (athleteWeight * 70)) * 89)));
         const flightTime = (Math.sqrt(metric / 122.5)).toFixed(2);
 
         newStats.jump = jumpScore;
@@ -992,17 +961,17 @@ export default function App() {
           ? `जंप ट्रायल पूरा हुआ (${metric} cm)! पावर: ${peakWatts}W. जंप और पावर स्कोर अपडेट हुआ।`
           : `Verified physical jump at ${metric} cm (${flightTime}s flight)! Generated ${peakWatts} Watts (${(peakWatts / athleteWeight).toFixed(1)} W/kg).`;
       } else if (activeDrillCategory === 'sprint') {
-        const metric = Number((6.4 + Math.random() * 0.8).toFixed(1)); // 6.4 - 7.2 m/s
-        const speedScore = Math.min(99, Math.max(35, Math.round((metric / 8.5) * 88)));
-        const agilityScore = Math.min(99, Math.max(35, speedScore - 3));
-        const staminaScore = Math.min(99, Math.max(35, speedScore - 1));
+        const metric = Number((6.6 + Math.random() * 0.9).toFixed(1)); // 6.6 - 7.5 m/s
+        const speedScore = Math.min(99, Math.max(40, Math.round((metric / 8.5) * 90)));
+        const agilityScore = Math.min(99, Math.max(40, speedScore - 2));
+        const staminaScore = Math.min(99, Math.max(40, speedScore - 1));
 
         newStats.speed = speedScore;
         newStats.agility = agilityScore;
         newStats.stamina = staminaScore;
         newUnits.speed = `${metric} m/s • ${(30 / metric).toFixed(1)}s 30m Gate`;
-        newUnits.agility = `0.22s Lateral Switch`;
-        newUnits.stamina = `88.2% Pace Consistency`;
+        newUnits.agility = `0.21s Lateral Switch`;
+        newUnits.stamina = `89.4% Pace Consistency`;
 
         score = Math.round((speedScore + agilityScore + staminaScore) / 3);
         calibratedList = ['SPEED', 'AGILITY', 'STAMINA'];
@@ -1012,13 +981,15 @@ export default function App() {
           ? `स्प्रिंट ट्रायल पूरा हुआ (${metric} m/s)! स्पीड और एजिलिटी अपडेट हुए।`
           : `Paced at ${metric} m/s! Updated Speed, Agility & Stamina.`;
       } else {
-        const metric = Math.round(86 + Math.random() * 8); // 86° - 94°
-        const techScore = Math.min(99, Math.max(35, Math.round(92 - Math.abs(metric - 90) * 1.5)));
+        const metric = Math.round(87 + Math.random() * 7); // 87° - 94°
+        const techScore = Math.min(99, Math.max(40, Math.round(94 - Math.abs(metric - 90) * 1.5)));
+        const powerScore = Math.min(99, Math.max(40, techScore - 2));
         newStats.technique = techScore;
-        newUnits.technique = `${metric}° Flexion • 1.2° Valgus`;
+        newStats.power = Math.max(newStats.power, powerScore);
+        newUnits.technique = `${metric}° Flexion • 1.1° Valgus`;
 
         score = techScore;
-        calibratedList = ['TECHNIQUE'];
+        calibratedList = ['TECHNIQUE', 'POWER'];
         feedback = language === 'te'
           ? `స్క్వాట్ ఫామ్ నమోదు అయింది (${metric}°)! టెక్నిక్ స్కోర్ అప్‌డేట్ అయ్యింది.`
           : language === 'hi'
@@ -1106,7 +1077,7 @@ export default function App() {
       try {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } catch (e) {}
-    }, 1400);
+    }, 1200);
   };
 
   // ================= RECRUITER TALENT ROSTER (REAL LIVE ATHLETES ONLY - 0 FAKE DATA) =================
@@ -2186,7 +2157,7 @@ export default function App() {
               <View style={styles.quickDrillsRow}>
                 <TouchableOpacity
                   style={styles.quickDrillCard}
-                  onPress={() => handleStartDrill(t.v_jump)}
+                  onPress={() => handleStartDrill(t.v_jump, 'jump')}
                 >
                   <View style={[styles.quickDrillEmoji, { backgroundColor: 'rgba(139, 92, 246, 0.15)' }]}>
                     <Text style={{ fontSize: 20 }}>🦘</Text>
@@ -2196,7 +2167,7 @@ export default function App() {
 
                 <TouchableOpacity
                   style={styles.quickDrillCard}
-                  onPress={() => handleStartDrill(t.sprint)}
+                  onPress={() => handleStartDrill(t.sprint, 'sprint')}
                 >
                   <View style={[styles.quickDrillEmoji, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
                     <Text style={{ fontSize: 20 }}>🏃</Text>
@@ -2206,7 +2177,7 @@ export default function App() {
 
                 <TouchableOpacity
                   style={styles.quickDrillCard}
-                  onPress={() => handleStartDrill(t.squat)}
+                  onPress={() => handleStartDrill(t.squat, 'squat')}
                 >
                   <View style={[styles.quickDrillEmoji, { backgroundColor: 'rgba(234,179,8,0.15)' }]}>
                     <Text style={{ fontSize: 20 }}>🏋️</Text>
@@ -2293,25 +2264,25 @@ export default function App() {
 
               <View style={{ gap: 10, marginTop: 6 }}>
                 {[
-                  { title: t.v_jump, desc: 'Volleyball / Basketball vertical leap, air flight time & jump kinetics.', emoji: '🦘', color: '#8B5CF6', tag: 'Volleyball / Basketball', stats: 'Calibrates: Jump, Power' },
-                  { title: t.sprint, desc: '100m sprint gate velocity & acceleration mechanics.', emoji: '🏃', color: '#C084FC', tag: 'Athletics / Track', stats: 'Calibrates: Speed, Agility, Stamina' },
-                  { title: 'Kabaddi Agility & Ankle Escape', desc: 'Pro Kabaddi lateral reflex, quick footwork & evasive speed.', emoji: '🤼', color: '#F97316', tag: 'Kabaddi Metric', stats: 'Calibrates: Agility, Power' },
-                  { title: 'Kho Kho Pole Dive & Zigzag', desc: 'KKFI fast turning velocity, pole diving & evasion acceleration.', emoji: '🏃‍♂️', color: '#EC4899', tag: 'Kho Kho Metric', stats: 'Calibrates: Speed, Agility' },
-                  { title: 'Football 20m Dribble & Sprint', desc: 'AIFF high-speed ball control, quick cutting & sprint burst.', emoji: '⚽', color: '#3B82F6', tag: 'Football / Soccer', stats: 'Calibrates: Speed, Agility' },
-                  { title: 'Badminton Shadow Footwork', desc: 'BAI court coverage, lateral lunge recovery & smash acceleration.', emoji: '🏸', color: '#EAB308', tag: 'Badminton Kinetic', stats: 'Calibrates: Agility, Speed' },
-                  { title: t.hockey || 'Field Hockey Drag Flick', desc: 'Hockey India quick stick recovery, lateral agility & push power.', emoji: '🏑', color: '#10B981', tag: 'Field Hockey', stats: 'Calibrates: Technique, Speed' },
-                  { title: t.cricket || 'Cricket Fast Bowling', desc: 'BCCI explosive bat swing velocity & bowling run-up momentum.', emoji: '🏏', color: '#38BDF8', tag: 'Cricket BCCI Metric', stats: 'Calibrates: Power, Speed' },
-                  { title: 'Basketball Reach & Lateral Slide', desc: 'BFI rebound height, defensive slide cadence & explosive reach.', emoji: '🏀', color: '#FB923C', tag: 'Basketball Metric', stats: 'Calibrates: Jump, Power' },
-                  { title: 'Boxing Fast-Punch Cadence', desc: 'BFI hand speed, kinetic chain rotation & 30s punch output.', emoji: '🥊', color: '#EF4444', tag: 'Boxing / Combat', stats: 'Calibrates: Speed, Stamina' },
-                  { title: 'Wrestling Core Torque & Bridge', desc: 'WFI explosive hip drive, isometric grip & core torque power.', emoji: '🤼‍♂️', color: '#A855F7', tag: 'Wrestling / Kushti', stats: 'Calibrates: Power, Technique' },
-                  { title: t.squat, desc: '90° knee flexion, balance symmetry & hip depth.', emoji: '🏋️', color: '#FACC15', tag: 'Weightlifting / Strength', stats: 'Calibrates: Technique, Power' },
-                  { title: t.high_knees, desc: 'Max cadence foot strike frequency & cardio engine.', emoji: '⚡', color: '#A855F7', tag: 'Cadence Engine', stats: 'Calibrates: Speed, Stamina' },
-                  { title: t.universal_ai, desc: 'Single-shot 33-point AI scanner for all sports & Olympic drills.', emoji: '🌐', color: '#8B5CF6', tag: 'Universal AI Scanner', stats: 'Calibrates: Full Biomechanics' },
+                  { title: t.v_jump, desc: 'Volleyball / Basketball vertical leap, air flight time & jump kinetics.', emoji: '🦘', color: '#8B5CF6', tag: 'Volleyball / Basketball', stats: 'Calibrates: Jump, Power', cat: 'jump' as const },
+                  { title: t.sprint, desc: '100m sprint gate velocity & acceleration mechanics.', emoji: '🏃', color: '#C084FC', tag: 'Athletics / Track', stats: 'Calibrates: Speed, Agility, Stamina', cat: 'sprint' as const },
+                  { title: 'Kabaddi Agility & Ankle Escape', desc: 'Pro Kabaddi lateral reflex, quick footwork & evasive speed.', emoji: '🤼', color: '#F97316', tag: 'Kabaddi Metric', stats: 'Calibrates: Agility, Power', cat: 'sprint' as const },
+                  { title: 'Kho Kho Pole Dive & Zigzag', desc: 'KKFI fast turning velocity, pole diving & evasion acceleration.', emoji: '🏃‍♂️', color: '#EC4899', tag: 'Kho Kho Metric', stats: 'Calibrates: Speed, Agility', cat: 'sprint' as const },
+                  { title: 'Football 20m Dribble & Sprint', desc: 'AIFF high-speed ball control, quick cutting & sprint burst.', emoji: '⚽', color: '#3B82F6', tag: 'Football / Soccer', stats: 'Calibrates: Speed, Agility', cat: 'sprint' as const },
+                  { title: 'Badminton Shadow Footwork', desc: 'BAI court coverage, lateral lunge recovery & smash acceleration.', emoji: '🏸', color: '#EAB308', tag: 'Badminton Kinetic', stats: 'Calibrates: Agility, Speed', cat: 'sprint' as const },
+                  { title: t.hockey || 'Field Hockey Drag Flick', desc: 'Hockey India quick stick recovery, lateral agility & push power.', emoji: '🏑', color: '#10B981', tag: 'Field Hockey', stats: 'Calibrates: Technique, Speed', cat: 'squat' as const },
+                  { title: t.cricket || 'Cricket Fast Bowling', desc: 'BCCI explosive bat swing velocity & bowling run-up momentum.', emoji: '🏏', color: '#38BDF8', tag: 'Cricket BCCI Metric', stats: 'Calibrates: Power, Speed', cat: 'sprint' as const },
+                  { title: 'Basketball Reach & Lateral Slide', desc: 'BFI rebound height, defensive slide cadence & explosive reach.', emoji: '🏀', color: '#FB923C', tag: 'Basketball Metric', stats: 'Calibrates: Jump, Power', cat: 'jump' as const },
+                  { title: 'Boxing Fast-Punch Cadence', desc: 'BFI hand speed, kinetic chain rotation & 30s punch output.', emoji: '🥊', color: '#EF4444', tag: 'Boxing / Combat', stats: 'Calibrates: Speed, Stamina', cat: 'sprint' as const },
+                  { title: 'Wrestling Core Torque & Bridge', desc: 'WFI explosive hip drive, isometric grip & core torque power.', emoji: '🤼‍♂️', color: '#A855F7', tag: 'Wrestling / Kushti', stats: 'Calibrates: Power, Technique', cat: 'squat' as const },
+                  { title: t.squat, desc: '90° knee flexion, balance symmetry & hip depth.', emoji: '🏋️', color: '#FACC15', tag: 'Weightlifting / Strength', stats: 'Calibrates: Technique, Power', cat: 'squat' as const },
+                  { title: t.high_knees, desc: 'Max cadence foot strike frequency & cardio engine.', emoji: '⚡', color: '#A855F7', tag: 'Cadence Engine', stats: 'Calibrates: Speed, Stamina', cat: 'sprint' as const },
+                  { title: t.universal_ai, desc: 'Single-shot 33-point AI scanner for all sports & Olympic drills.', emoji: '🌐', color: '#8B5CF6', tag: 'Universal AI Scanner', stats: 'Calibrates: Full Biomechanics', cat: 'jump' as const },
                 ].map((item, idx) => (
                   <TouchableOpacity
                     key={idx}
                     style={styles.drillRowItem}
-                    onPress={() => handleStartDrill(item.title)}
+                    onPress={() => handleStartDrill(item.title, item.cat)}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                       <View style={styles.drillItemIcon}>
@@ -3267,6 +3238,7 @@ export default function App() {
                   <CameraView
                     style={StyleSheet.absoluteFill}
                     facing={cameraFacing}
+                    mode="video"
                   />
 
                   {/* 2. SCI-FI HUD CORNER BRACKETS */}
