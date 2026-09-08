@@ -1140,7 +1140,7 @@ export default function App() {
       location: callUpVenue,
       dates: callUpDate,
       eligibility: 'Verified SAI 85+ OVR Gold Tier Athletes',
-      badgeColor: '#22C55E',
+      badgeColor: '#8B5CF6',
       status: `DIRECT CALL-UP FOR ${targetAthlete.name.toUpperCase()}`,
       desc: callUpNotes,
       officer: `${activeScoutProfile.name} (${activeScoutProfile.license})`,
@@ -1171,15 +1171,15 @@ export default function App() {
   if (!isLoggedIn) {
     return (
       <SafeAreaView style={styles.safeContainer}>
-        <StatusBar barStyle="light-content" backgroundColor="#070B14" />
+        <StatusBar barStyle="light-content" backgroundColor="#090514" />
 
         <ScrollView style={styles.scrollFlex} contentContainerStyle={styles.loginContent}>
           <View style={styles.loginBrand}>
             <View style={styles.loginLogoIcon}>
-              <Ionicons name="pulse" color="#22C55E" size={34} />
+              <Ionicons name="pulse" color="#8B5CF6" size={34} />
             </View>
             <Text style={styles.loginTitle}>
-              Sport<Text style={{ color: '#22C55E' }}>Lens</Text>
+              Sport<Text style={{ color: '#8B5CF6' }}>Lens</Text>
             </Text>
             <Text style={styles.loginSubtitle}>{t.login_sub}</Text>
           </View>
@@ -1188,9 +1188,9 @@ export default function App() {
             style={styles.loginLangBtn}
             onPress={() => setIsLangModalOpen(true)}
           >
-            <Ionicons name="globe-outline" color="#22C55E" size={16} />
+            <Ionicons name="globe-outline" color="#8B5CF6" size={16} />
             <Text style={styles.loginLangText}>
-              Language: <Text style={{ color: '#22C55E', fontWeight: 'bold' }}>{currentLangObj.native}</Text> (Change)
+              Language: <Text style={{ color: '#8B5CF6', fontWeight: 'bold' }}>{currentLangObj.native}</Text> (Change)
             </Text>
           </TouchableOpacity>
 
@@ -1199,7 +1199,7 @@ export default function App() {
             <View style={{ width: '100%', gap: 14 }}>
               {/* Role 1: Athlete Portal */}
               <TouchableOpacity
-                style={[styles.welcomeChoiceCard, { borderColor: '#22C55E' }]}
+                style={[styles.welcomeChoiceCard, { borderColor: '#8B5CF6' }]}
                 onPress={() => {
                   try {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -1211,11 +1211,11 @@ export default function App() {
                 }}
               >
                 <LinearGradient
-                  colors={['rgba(34,197,94,0.18)', 'rgba(34,197,94,0.04)']}
+                  colors={['rgba(139, 92, 246, 0.18)', 'rgba(139, 92, 246, 0.04)']}
                   style={styles.welcomeChoiceGradient}
                 >
                   <View style={styles.welcomeIconCircle}>
-                    <Ionicons name="person" color="#22C55E" size={26} />
+                    <Ionicons name="person" color="#8B5CF6" size={26} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.welcomeChoiceTitle}>🏃 Athlete Portal</Text>
@@ -1223,7 +1223,7 @@ export default function App() {
                       Test physical drills, track verified OVR rating, and get scouted by national academies.
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" color="#22C55E" size={22} />
+                  <Ionicons name="chevron-forward" color="#8B5CF6" size={22} />
                 </LinearGradient>
               </TouchableOpacity>
 
@@ -1248,8 +1248,8 @@ export default function App() {
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={[styles.welcomeChoiceTitle, { color: '#FACC15' }]}>🏛️ Recruiter / Scout Portal</Text>
-                      <View style={{ backgroundColor: 'rgba(34,197,94,0.2)', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
-                        <Text style={{ color: '#22C55E', fontSize: 7, fontWeight: '900' }}>OFFICIAL</Text>
+                      <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                        <Text style={{ color: '#8B5CF6', fontSize: 7, fontWeight: '900' }}>OFFICIAL</Text>
                       </View>
                     </View>
                     <Text style={styles.welcomeChoiceDesc}>
@@ -1264,12 +1264,12 @@ export default function App() {
 
           {/* 2. DIRECT ATHLETE AUTH PAGE (LOGIN / REGISTER) */}
           {authScreen === 'athlete_auth' && (
-            <View style={[styles.loginCard, { borderColor: '#22C55E' }]}>
+            <View style={[styles.loginCard, { borderColor: '#8B5CF6' }]}>
               <View style={styles.formTopRow}>
                 <TouchableOpacity onPress={() => setAuthScreen('welcome')}>
                   <Text style={styles.backBtnText}>❮ Back</Text>
                 </TouchableOpacity>
-                <Text style={[styles.formTopTitle, { color: '#22C55E' }]}>🏃 Athlete Portal</Text>
+                <Text style={[styles.formTopTitle, { color: '#8B5CF6' }]}>🏃 Athlete Portal</Text>
                 <View style={{ width: 40 }} />
               </View>
 
@@ -1326,7 +1326,7 @@ export default function App() {
                   <View style={styles.inputGroup}>
                     <Text style={styles.inputLabel}>{t.enter_pin_label}</Text>
                     <TextInput
-                      style={[styles.textInput, { letterSpacing: 6, fontSize: 18, color: '#22C55E', fontWeight: 'bold' }]}
+                      style={[styles.textInput, { letterSpacing: 6, fontSize: 18, color: '#8B5CF6', fontWeight: 'bold' }]}
                       placeholder="• • • •"
                       placeholderTextColor="#64748B"
                       keyboardType="number-pad"
@@ -1350,7 +1350,7 @@ export default function App() {
                     onPress={() => setAthleteAuthTab('register')}
                   >
                     <Text style={{ color: '#94A3B8', fontSize: 11 }}>
-                      New athlete? <Text style={{ color: '#22C55E', fontWeight: 'bold' }}>Register here ❯</Text>
+                      New athlete? <Text style={{ color: '#8B5CF6', fontWeight: 'bold' }}>Register here ❯</Text>
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1376,7 +1376,7 @@ export default function App() {
                   <View style={styles.inputGroup}>
                     <Text style={styles.inputLabel}>{t.create_pin_label}</Text>
                     <TextInput
-                      style={[styles.textInput, { letterSpacing: 6, fontSize: 18, color: '#22C55E', fontWeight: 'bold' }]}
+                      style={[styles.textInput, { letterSpacing: 6, fontSize: 18, color: '#8B5CF6', fontWeight: 'bold' }]}
                       placeholder="• • • •"
                       placeholderTextColor="#64748B"
                       keyboardType="number-pad"
@@ -1400,7 +1400,7 @@ export default function App() {
                     onPress={() => setAthleteAuthTab('login')}
                   >
                     <Text style={{ color: '#94A3B8', fontSize: 11 }}>
-                      Already have an account? <Text style={{ color: '#22C55E', fontWeight: 'bold' }}>Log in ❯</Text>
+                      Already have an account? <Text style={{ color: '#8B5CF6', fontWeight: 'bold' }}>Log in ❯</Text>
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1641,7 +1641,7 @@ export default function App() {
               </View>
 
               <TouchableOpacity style={styles.primaryBtn} onPress={handleFinishProfileSetup}>
-                <Ionicons name="shield-checkmark" color="#00F0FF" size={16} />
+                <Ionicons name="shield-checkmark" color="#C084FC" size={16} />
                 <Text style={styles.primaryBtnText}>Enter SportLens Studio ❯</Text>
               </TouchableOpacity>
 
@@ -1691,19 +1691,19 @@ export default function App() {
   // ================= VIEW: MAIN INTERFACE (ATHLETE VS RECRUITER) =================
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <StatusBar barStyle="light-content" backgroundColor="#070B14" />
+      <StatusBar barStyle="light-content" backgroundColor="#090514" />
 
       {/* TOP HEADER: DUAL-MODE SWITCHER (ATHLETE ⇄ SAI SCOUT) */}
       <View style={styles.headerBar}>
         <View style={styles.brandRow}>
-          <View style={[styles.headerLogo, appMode === 'recruiter' && { backgroundColor: 'rgba(0,240,255,0.15)' }]}>
-            <Ionicons name={appMode === 'recruiter' ? 'shield-checkmark' : 'pulse'} color={appMode === 'recruiter' ? '#00F0FF' : '#22C55E'} size={16} />
+          <View style={[styles.headerLogo, appMode === 'recruiter' && { backgroundColor: 'rgba(192, 132, 252, 0.15)' }]}>
+            <Ionicons name={appMode === 'recruiter' ? 'shield-checkmark' : 'pulse'} color={appMode === 'recruiter' ? '#C084FC' : '#8B5CF6'} size={16} />
           </View>
           <Text style={styles.headerTitle}>
             {appMode === 'recruiter' ? (
-              <>SAI <Text style={{ color: '#00F0FF' }}>Scout Portal</Text></>
+              <>SAI <Text style={{ color: '#C084FC' }}>Scout Portal</Text></>
             ) : (
-              <>Sport<Text style={{ color: '#22C55E' }}>Lens</Text></>
+              <>Sport<Text style={{ color: '#8B5CF6' }}>Lens</Text></>
             )}
           </Text>
         </View>
@@ -1729,7 +1729,7 @@ export default function App() {
             style={styles.headerLangPill}
             onPress={() => setIsLangModalOpen(true)}
           >
-            <Ionicons name="globe-outline" color="#22C55E" size={14} />
+            <Ionicons name="globe-outline" color="#8B5CF6" size={14} />
             <Text style={styles.headerLangText}>{currentLangObj.native}</Text>
           </TouchableOpacity>
 
@@ -1780,12 +1780,12 @@ export default function App() {
         <ScrollView style={styles.scrollFlex} contentContainerStyle={{ padding: 14, paddingBottom: 110 }}>
           {/* Scout Credentials & Verification Banner */}
           <LinearGradient
-            colors={['#0F172A', '#132338', '#091E3A']}
+            colors={['#130924', '#1C0F38', '#28144D']}
             style={styles.scoutBanner}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View style={styles.scoutAvatarCircle}>
-                <Ionicons name="shield-checkmark" color="#00F0FF" size={28} />
+                <Ionicons name="shield-checkmark" color="#C084FC" size={28} />
               </View>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -1796,7 +1796,7 @@ export default function App() {
                 </View>
                 <Text style={styles.scoutSub}>{activeScoutProfile.org}</Text>
                 <Text style={styles.scoutId}>Credentials: {activeScoutProfile.license}</Text>
-                <Text style={{ color: '#22C55E', fontSize: 8, fontWeight: 'bold', marginTop: 2 }}>
+                <Text style={{ color: '#8B5CF6', fontSize: 8, fontWeight: 'bold', marginTop: 2 }}>
                   🔐 Digital Key: {activeScoutProfile.cryptoKey}
                 </Text>
               </View>
@@ -1815,7 +1815,7 @@ export default function App() {
                 <Text style={styles.scoutStatLabel}>Gold Tier (85+)</Text>
               </View>
               <View style={styles.scoutStatItem}>
-                <Text style={[styles.scoutStatNum, { color: '#22C55E' }]}>
+                <Text style={[styles.scoutStatNum, { color: '#8B5CF6' }]}>
                   {recruitmentAnnouncementsList.length}
                 </Text>
                 <Text style={styles.scoutStatLabel}>Invites Issued</Text>
@@ -1843,7 +1843,7 @@ export default function App() {
             {/* 1. SPORT SELECTOR (Quick Pills + 'All Sports' at the end of scroll) */}
             <View style={{ gap: 6 }}>
               <Text style={{ color: '#94A3B8', fontSize: 11, fontWeight: 'bold' }}>
-                🏅 SPORT: <Text style={{ color: '#00F0FF' }}>{recruiterSportFilter.toUpperCase()}</Text>
+                🏅 SPORT: <Text style={{ color: '#C084FC' }}>{recruiterSportFilter.toUpperCase()}</Text>
               </Text>
 
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', gap: 6 }}>
@@ -1867,13 +1867,13 @@ export default function App() {
 
                 {/* 'All Sports' button at the end of scroll */}
                 <TouchableOpacity
-                  style={[styles.scoutFilterPill, { backgroundColor: 'rgba(0,240,255,0.12)', borderColor: '#00F0FF', borderStyle: 'dashed' }]}
+                  style={[styles.scoutFilterPill, { backgroundColor: 'rgba(192, 132, 252, 0.12)', borderColor: '#C084FC', borderStyle: 'dashed' }]}
                   onPress={() => {
                     setSearchSportQuery('');
                     setIsSportPickerModalOpen(true);
                   }}
                 >
-                  <Text style={[styles.scoutFilterText, { color: '#00F0FF', fontWeight: 'bold' }]}>
+                  <Text style={[styles.scoutFilterText, { color: '#C084FC', fontWeight: 'bold' }]}>
                     ➕ All Sports ({ALL_SPORTS.length} A-Z) ❯
                   </Text>
                 </TouchableOpacity>
@@ -1926,7 +1926,7 @@ export default function App() {
             {/* 3. DISTRICT SELECTOR (Quick Districts + 'All Districts' at the end of scroll) */}
             <View style={{ gap: 6 }}>
               <Text style={{ color: '#94A3B8', fontSize: 11, fontWeight: 'bold' }}>
-                📍 DISTRICT: <Text style={{ color: '#22C55E' }}>{recruiterDistrictFilter.toUpperCase()}</Text>
+                📍 DISTRICT: <Text style={{ color: '#8B5CF6' }}>{recruiterDistrictFilter.toUpperCase()}</Text>
               </Text>
 
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', gap: 6 }}>
@@ -1955,13 +1955,13 @@ export default function App() {
 
                       {/* 'All Districts' button at the end of scroll */}
                       <TouchableOpacity
-                        style={[styles.scoutFilterPill, { backgroundColor: 'rgba(34,197,94,0.12)', borderColor: '#22C55E', borderStyle: 'dashed' }]}
+                        style={[styles.scoutFilterPill, { backgroundColor: 'rgba(139, 92, 246, 0.12)', borderColor: '#8B5CF6', borderStyle: 'dashed' }]}
                         onPress={() => {
                           setSearchDistrictQuery('');
                           setIsDistrictPickerModalOpen(true);
                         }}
                       >
-                        <Text style={[styles.scoutFilterText, { color: '#22C55E', fontWeight: 'bold' }]}>
+                        <Text style={[styles.scoutFilterText, { color: '#8B5CF6', fontWeight: 'bold' }]}>
                           ➕ All Districts ({(recruiterStateFilter !== 'All' && INDIA_STATES_AND_DISTRICTS[recruiterStateFilter]) ? INDIA_STATES_AND_DISTRICTS[recruiterStateFilter].length : 26} A-Z) ❯
                         </Text>
                       </TouchableOpacity>
@@ -1978,7 +1978,7 @@ export default function App() {
               <Text style={styles.sectionHeading}>
                 VERIFIED GRASSROOTS PROSPECTS ({filteredTalent.length})
               </Text>
-              <Text style={{ color: '#00F0FF', fontSize: 10, fontWeight: 'bold' }}>
+              <Text style={{ color: '#C084FC', fontSize: 10, fontWeight: 'bold' }}>
                 Single-Shot Video Verified 🛡️
               </Text>
             </View>
@@ -2029,8 +2029,8 @@ export default function App() {
                       </View>
 
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
-                        <Ionicons name="shield-checkmark" color="#22C55E" size={12} />
-                        <Text style={{ color: '#22C55E', fontSize: 9, fontWeight: 'bold' }}>
+                        <Ionicons name="shield-checkmark" color="#8B5CF6" size={12} />
+                        <Text style={{ color: '#8B5CF6', fontSize: 9, fontWeight: 'bold' }}>
                           {ath.antiCheatScore} • {ath.badge}
                         </Text>
                       </View>
@@ -2043,7 +2043,7 @@ export default function App() {
                       style={styles.talentAuditBtn}
                       onPress={() => setSelectedTalentForAudit(ath)}
                     >
-                      <Ionicons name="analytics" color="#00F0FF" size={14} />
+                      <Ionicons name="analytics" color="#C084FC" size={14} />
                       <Text style={styles.talentAuditBtnText}>Inspect Biomechanics</Text>
                     </TouchableOpacity>
 
@@ -2061,7 +2061,7 @@ export default function App() {
                 </View>
               ))
             ) : (
-              <View style={{ alignItems: 'center', padding: 24, backgroundColor: '#0F172A', borderRadius: 20, borderWidth: 1, borderColor: '#1E293B', marginTop: 10 }}>
+              <View style={{ alignItems: 'center', padding: 24, backgroundColor: '#130924', borderRadius: 20, borderWidth: 1, borderColor: '#2E1854', marginTop: 10 }}>
                 <Ionicons name="people-outline" color="#64748B" size={38} />
                 <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 14, marginTop: 10 }}>No Matching Athletes Found</Text>
                 <Text style={{ color: '#94A3B8', fontSize: 11, textAlign: 'center', marginTop: 4, lineHeight: 16 }}>
@@ -2081,7 +2081,7 @@ export default function App() {
           {currentTab === 'home' && (
             <View style={{ gap: 14 }}>
               <LinearGradient
-                colors={['#101626', '#0B0F19', '#161F36']}
+                colors={['#110A26', '#0B071B', '#1E103C']}
                 style={styles.heroBanner}
               >
                 <View style={{ flex: 1, paddingRight: 8 }}>
@@ -2095,14 +2095,14 @@ export default function App() {
                 </View>
 
                 <View style={styles.heroBannerIconBox}>
-                  <Ionicons name="flash" color="#00F0FF" size={28} />
+                  <Ionicons name="flash" color="#C084FC" size={28} />
                 </View>
               </LinearGradient>
 
               {/* Gamification: Daily Streak & Level XP Progress Widget */}
               <LinearGradient
-                colors={['#161F36', '#0F172A']}
-                style={{ borderRadius: 20, padding: 14, borderWidth: 1, borderColor: '#1E293B', gap: 10 }}
+                colors={['#1E103C', '#130924']}
+                style={{ borderRadius: 20, padding: 14, borderWidth: 1, borderColor: '#2E1854', gap: 10 }}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -2112,11 +2112,11 @@ export default function App() {
                     <View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 14 }}>{athlete.streakDays || 0} {t.streak_suffix || 'Day Training Streak'}</Text>
-                        <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 5, paddingVertical: 1.5, borderRadius: 4, borderWidth: 0.5, borderColor: '#22C55E' }}>
-                          <Text style={{ color: '#22C55E', fontSize: 7.5, fontWeight: '900' }}>🇮🇳 IST SYNC</Text>
+                        <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.15)', paddingHorizontal: 5, paddingVertical: 1.5, borderRadius: 4, borderWidth: 0.5, borderColor: '#8B5CF6' }}>
+                          <Text style={{ color: '#8B5CF6', fontSize: 7.5, fontWeight: '900' }}>🇮🇳 IST SYNC</Text>
                         </View>
                       </View>
-                      <Text style={{ color: (athlete.streakDays || 0) > 0 ? (athlete.lastActiveDateIST === getISTDateString() ? '#22C55E' : '#F97316') : '#94A3B8', fontSize: 10, fontWeight: 'bold' }}>
+                      <Text style={{ color: (athlete.streakDays || 0) > 0 ? (athlete.lastActiveDateIST === getISTDateString() ? '#8B5CF6' : '#F97316') : '#94A3B8', fontSize: 10, fontWeight: 'bold' }}>
                         {(athlete.streakDays || 0) > 0
                           ? (athlete.lastActiveDateIST === getISTDateString() ? (t.streak_secured || 'Streak Secured') : (t.streak_warning || 'Record before midnight!'))
                           : (t.streak_start_prompt || 'Complete 1st test to start streak!')}
@@ -2125,8 +2125,8 @@ export default function App() {
                   </View>
 
                   {/* Level Tag */}
-                  <View style={{ backgroundColor: 'rgba(0,240,255,0.15)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0,240,255,0.3)' }}>
-                    <Text style={{ color: '#00F0FF', fontWeight: '900', fontSize: 10 }}>{t.level_label || 'LVL'} {athlete.level || 1} • {(athlete.levelTitle || 'Grassroots Rookie').toUpperCase()}</Text>
+                  <View style={{ backgroundColor: 'rgba(192, 132, 252, 0.15)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(192, 132, 252, 0.3)' }}>
+                    <Text style={{ color: '#C084FC', fontWeight: '900', fontSize: 10 }}>{t.level_label || 'LVL'} {athlete.level || 1} • {(athlete.levelTitle || 'Grassroots Rookie').toUpperCase()}</Text>
                   </View>
                 </View>
 
@@ -2141,19 +2141,19 @@ export default function App() {
                           width: 28,
                           height: 28,
                           borderRadius: 14,
-                          backgroundColor: isCompleted ? '#22C55E' : '#1E293B',
+                          backgroundColor: isCompleted ? '#8B5CF6' : '#2E1854',
                           alignItems: 'center',
                           justifyContent: 'center',
                           borderWidth: isToday ? 1.5 : 0,
-                          borderColor: isToday ? '#00F0FF' : 'transparent',
+                          borderColor: isToday ? '#C084FC' : 'transparent',
                         }}>
                           {isCompleted ? (
                             <Ionicons name="checkmark" color="#000" size={14} />
                           ) : (
-                            <Text style={{ color: isToday ? '#00F0FF' : '#64748B', fontSize: 10, fontWeight: 'bold' }}>{day}</Text>
+                            <Text style={{ color: isToday ? '#C084FC' : '#64748B', fontSize: 10, fontWeight: 'bold' }}>{day}</Text>
                           )}
                         </View>
-                        <Text style={{ color: isCompleted ? '#22C55E' : isToday ? '#00F0FF' : '#64748B', fontSize: 8, fontWeight: 'bold' }}>
+                        <Text style={{ color: isCompleted ? '#8B5CF6' : isToday ? '#C084FC' : '#64748B', fontSize: 8, fontWeight: 'bold' }}>
                           {day} {isToday ? '•' : ''}
                         </Text>
                       </View>
@@ -2165,12 +2165,12 @@ export default function App() {
                 <View style={{ gap: 4, marginTop: 4 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={{ color: '#94A3B8', fontSize: 10, fontWeight: 'bold' }}>{t.level_progress || 'Level Progress'}</Text>
-                    <Text style={{ color: '#00F0FF', fontSize: 10, fontWeight: 'bold' }}>
+                    <Text style={{ color: '#C084FC', fontSize: 10, fontWeight: 'bold' }}>
                       {athlete.xp || 0} / {(athlete.level || 1) * 300} XP ({Math.min(100, Math.round(((athlete.xp || 0) % 300) / 3))}%)
                     </Text>
                   </View>
-                  <View style={{ height: 6, backgroundColor: '#1E293B', borderRadius: 3, overflow: 'hidden' }}>
-                    <View style={{ height: '100%', width: `${Math.max((athlete.xp || 0) > 0 ? 5 : 0, Math.min(100, Math.round(((athlete.xp || 0) % 300) / 3)))}%`, backgroundColor: '#00F0FF', borderRadius: 3 }} />
+                  <View style={{ height: 6, backgroundColor: '#2E1854', borderRadius: 3, overflow: 'hidden' }}>
+                    <View style={{ height: '100%', width: `${Math.max((athlete.xp || 0) > 0 ? 5 : 0, Math.min(100, Math.round(((athlete.xp || 0) % 300) / 3)))}%`, backgroundColor: '#C084FC', borderRadius: 3 }} />
                   </View>
                 </View>
               </LinearGradient>
@@ -2188,7 +2188,7 @@ export default function App() {
                   style={styles.quickDrillCard}
                   onPress={() => handleStartDrill(t.v_jump)}
                 >
-                  <View style={[styles.quickDrillEmoji, { backgroundColor: 'rgba(34,197,94,0.15)' }]}>
+                  <View style={[styles.quickDrillEmoji, { backgroundColor: 'rgba(139, 92, 246, 0.15)' }]}>
                     <Text style={{ fontSize: 20 }}>🦘</Text>
                   </View>
                   <Text style={styles.quickDrillLabel}>{t.v_jump}</Text>
@@ -2198,7 +2198,7 @@ export default function App() {
                   style={styles.quickDrillCard}
                   onPress={() => handleStartDrill(t.sprint)}
                 >
-                  <View style={[styles.quickDrillEmoji, { backgroundColor: 'rgba(6,182,212,0.15)' }]}>
+                  <View style={[styles.quickDrillEmoji, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
                     <Text style={{ fontSize: 20 }}>🏃</Text>
                   </View>
                   <Text style={styles.quickDrillLabel}>{t.sprint}</Text>
@@ -2231,7 +2231,7 @@ export default function App() {
                   </View>
                   <View style={styles.progressGridBox}>
                     <Text style={styles.progressBoxLabel}>{t.avg_rating}</Text>
-                    <Text style={[styles.progressBoxVal, { color: '#00F0FF' }]}>
+                    <Text style={[styles.progressBoxVal, { color: '#C084FC' }]}>
                       {athlete.ovr === 0 ? '—' : athlete.avgRating}
                     </Text>
                   </View>
@@ -2243,7 +2243,7 @@ export default function App() {
                   </View>
                   <View style={styles.progressGridBox}>
                     <Text style={styles.progressBoxLabel}>{t.improvement}</Text>
-                    <Text style={[styles.progressBoxVal, { color: '#22C55E' }]}>
+                    <Text style={[styles.progressBoxVal, { color: '#8B5CF6' }]}>
                       {athlete.ovr === 0 ? '0%' : `+${athlete.improvement}%`}
                     </Text>
                   </View>
@@ -2255,25 +2255,25 @@ export default function App() {
                 <Text style={styles.sectionHeading}>{t.unlocked_milestones || '🏅 UNLOCKED MILESTONE BADGES'}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', gap: 8 }}>
                   {[
-                    { title: t.gravity_defier || 'Gravity Defier', sub: 'Jump > 60cm', emoji: '🦘', color: '#22C55E', unlocked: (athlete.stats?.jump || 0) >= 60 },
-                    { title: t.sonic_cadence || 'Sonic Cadence', sub: 'Cadence > 170 spm', emoji: '⚡', color: '#00F0FF', unlocked: (athlete.stats?.speed || 0) >= 60 },
+                    { title: t.gravity_defier || 'Gravity Defier', sub: 'Jump > 60cm', emoji: '🦘', color: '#8B5CF6', unlocked: (athlete.stats?.jump || 0) >= 60 },
+                    { title: t.sonic_cadence || 'Sonic Cadence', sub: 'Cadence > 170 spm', emoji: '⚡', color: '#C084FC', unlocked: (athlete.stats?.speed || 0) >= 60 },
                     { title: t.sai_passport || 'SAI Gold Passport', sub: 'Single-Shot Video', emoji: '🛡️', color: '#FACC15', unlocked: (athlete.ovr || 0) >= 75 },
                     { title: t.trial_ready || 'State Trial Ready', sub: 'Direct Scout Invite', emoji: '🎫', color: '#A855F7', unlocked: recruitmentAnnouncementsList.length > 0 },
                   ].map((badge, idx) => (
                     <View
                       key={idx}
                       style={{
-                        backgroundColor: '#0F172A',
+                        backgroundColor: '#130924',
                         borderRadius: 16,
                         padding: 12,
                         width: 140,
                         borderWidth: 1,
-                        borderColor: badge.unlocked ? badge.color : '#1E293B',
+                        borderColor: badge.unlocked ? badge.color : '#2E1854',
                         alignItems: 'center',
                         gap: 4,
                       }}
                     >
-                      <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: badge.unlocked ? `${badge.color}22` : '#161F36', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: badge.unlocked ? badge.color : '#334155' }}>
+                      <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: badge.unlocked ? `${badge.color}22` : '#1E103C', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: badge.unlocked ? badge.color : '#3B1E6D' }}>
                         <Text style={{ fontSize: 22 }}>{badge.emoji}</Text>
                       </View>
                       <Text style={{ color: badge.unlocked ? '#FFF' : '#64748B', fontWeight: '900', fontSize: 11, textAlign: 'center', marginTop: 2 }}>{badge.title}</Text>
@@ -2293,8 +2293,8 @@ export default function App() {
 
               <View style={{ gap: 10, marginTop: 6 }}>
                 {[
-                  { title: t.v_jump, desc: 'Volleyball / Basketball vertical leap, air flight time & jump kinetics.', emoji: '🦘', color: '#22C55E', tag: 'Volleyball / Basketball', stats: 'Calibrates: Jump, Power' },
-                  { title: t.sprint, desc: '100m sprint gate velocity & acceleration mechanics.', emoji: '🏃', color: '#00F0FF', tag: 'Athletics / Track', stats: 'Calibrates: Speed, Agility, Stamina' },
+                  { title: t.v_jump, desc: 'Volleyball / Basketball vertical leap, air flight time & jump kinetics.', emoji: '🦘', color: '#8B5CF6', tag: 'Volleyball / Basketball', stats: 'Calibrates: Jump, Power' },
+                  { title: t.sprint, desc: '100m sprint gate velocity & acceleration mechanics.', emoji: '🏃', color: '#C084FC', tag: 'Athletics / Track', stats: 'Calibrates: Speed, Agility, Stamina' },
                   { title: 'Kabaddi Agility & Ankle Escape', desc: 'Pro Kabaddi lateral reflex, quick footwork & evasive speed.', emoji: '🤼', color: '#F97316', tag: 'Kabaddi Metric', stats: 'Calibrates: Agility, Power' },
                   { title: 'Kho Kho Pole Dive & Zigzag', desc: 'KKFI fast turning velocity, pole diving & evasion acceleration.', emoji: '🏃‍♂️', color: '#EC4899', tag: 'Kho Kho Metric', stats: 'Calibrates: Speed, Agility' },
                   { title: 'Football 20m Dribble & Sprint', desc: 'AIFF high-speed ball control, quick cutting & sprint burst.', emoji: '⚽', color: '#3B82F6', tag: 'Football / Soccer', stats: 'Calibrates: Speed, Agility' },
@@ -2306,7 +2306,7 @@ export default function App() {
                   { title: 'Wrestling Core Torque & Bridge', desc: 'WFI explosive hip drive, isometric grip & core torque power.', emoji: '🤼‍♂️', color: '#A855F7', tag: 'Wrestling / Kushti', stats: 'Calibrates: Power, Technique' },
                   { title: t.squat, desc: '90° knee flexion, balance symmetry & hip depth.', emoji: '🏋️', color: '#FACC15', tag: 'Weightlifting / Strength', stats: 'Calibrates: Technique, Power' },
                   { title: t.high_knees, desc: 'Max cadence foot strike frequency & cardio engine.', emoji: '⚡', color: '#A855F7', tag: 'Cadence Engine', stats: 'Calibrates: Speed, Stamina' },
-                  { title: t.universal_ai, desc: 'Single-shot 33-point AI scanner for all sports & Olympic drills.', emoji: '🌐', color: '#22C55E', tag: 'Universal AI Scanner', stats: 'Calibrates: Full Biomechanics' },
+                  { title: t.universal_ai, desc: 'Single-shot 33-point AI scanner for all sports & Olympic drills.', emoji: '🌐', color: '#8B5CF6', tag: 'Universal AI Scanner', stats: 'Calibrates: Full Biomechanics' },
                 ].map((item, idx) => (
                   <TouchableOpacity
                     key={idx}
@@ -2323,10 +2323,10 @@ export default function App() {
                           <Text style={[styles.drillItemTag, { color: item.color }]}>{item.tag}</Text>
                         </View>
                         <Text style={styles.drillItemDesc}>{item.desc}</Text>
-                        <Text style={{ color: '#22C55E', fontSize: 9, fontWeight: 'bold', marginTop: 2 }}>{item.stats}</Text>
+                        <Text style={{ color: '#8B5CF6', fontSize: 9, fontWeight: 'bold', marginTop: 2 }}>{item.stats}</Text>
                       </View>
                     </View>
-                    <Ionicons name="play" color="#22C55E" size={16} />
+                    <Ionicons name="play" color="#8B5CF6" size={16} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -2339,7 +2339,7 @@ export default function App() {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={styles.pageTitle}>{t.player_card_title}</Text>
                 <TouchableOpacity onPress={() => speakFeedback(`${athlete.ovr} OVR Athlete ${athlete.name}`)}>
-                  <Ionicons name="share-social" color="#22C55E" size={20} />
+                  <Ionicons name="share-social" color="#8B5CF6" size={20} />
                 </TouchableOpacity>
               </View>
 
@@ -2350,7 +2350,7 @@ export default function App() {
                 end={{ x: 1, y: 1 }}
                 style={[styles.goldCardWrap, { borderWidth: 2, borderColor: '#FDE047', elevation: 8 }]}
               >
-                <View style={[styles.goldCardBody, { backgroundColor: '#070B14' }]}>
+                <View style={[styles.goldCardBody, { backgroundColor: '#090514' }]}>
                   {/* Card Header: Tier Badge & OVR */}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <View style={{ gap: 2 }}>
@@ -2375,8 +2375,8 @@ export default function App() {
                         <View style={{ height: 4, backgroundColor: '#128807' }} />
                       </View>
 
-                      <View style={{ backgroundColor: '#161F36', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: '#00F0FF' }}>
-                        <Text style={{ color: '#00F0FF', fontSize: 9, fontWeight: '900' }}>
+                      <View style={{ backgroundColor: '#1E103C', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: '#C084FC' }}>
+                        <Text style={{ color: '#C084FC', fontSize: 9, fontWeight: '900' }}>
                           {athlete.ovr >= 90
                             ? `👑 Top 1.5% in ${athlete.district}`
                             : athlete.ovr >= 80
@@ -2411,12 +2411,12 @@ export default function App() {
                   {/* 6 Attribute Bars with EXACT REAL-WORLD PHYSICAL UNITS */}
                   <View style={styles.statBarsList}>
                     {[
-                      { label: t.jump, val: athlete.stats.jump, unit: athlete.rawUnits?.jump || '—', color: '#22C55E' },
+                      { label: t.jump, val: athlete.stats.jump, unit: athlete.rawUnits?.jump || '—', color: '#8B5CF6' },
                       { label: t.power, val: athlete.stats.power, unit: athlete.rawUnits?.power || '—', color: '#FACC15' },
-                      { label: t.speed, val: athlete.stats.speed, unit: athlete.rawUnits?.speed || '—', color: '#00F0FF' },
-                      { label: t.agility, val: athlete.stats.agility, unit: athlete.rawUnits?.agility || '—', color: '#22C55E' },
+                      { label: t.speed, val: athlete.stats.speed, unit: athlete.rawUnits?.speed || '—', color: '#C084FC' },
+                      { label: t.agility, val: athlete.stats.agility, unit: athlete.rawUnits?.agility || '—', color: '#8B5CF6' },
                       { label: t.stamina, val: athlete.stats.stamina, unit: athlete.rawUnits?.stamina || '—', color: '#A855F7' },
-                      { label: t.technique, val: athlete.stats.technique, unit: athlete.rawUnits?.technique || '—', color: '#00F0FF' },
+                      { label: t.technique, val: athlete.stats.technique, unit: athlete.rawUnits?.technique || '—', color: '#C084FC' },
                     ].map((st, i) => (
                       <View key={i} style={styles.singleStatRowPrecise}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2437,7 +2437,7 @@ export default function App() {
               <View style={styles.radarCard}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 13 }}>{t.radar_title || '🕸️ 6-AXIS BIOMECHANICS RADAR'}</Text>
-                  <Text style={{ color: '#00F0FF', fontWeight: 'bold', fontSize: 10 }}>
+                  <Text style={{ color: '#C084FC', fontWeight: 'bold', fontSize: 10 }}>
                     {Object.values(athlete.stats).filter(v => v > 0).length} / 6 {t.radar_active || 'Attributes Active'}
                   </Text>
                 </View>
@@ -2445,12 +2445,12 @@ export default function App() {
                 {/* Radar Grid Matrix */}
                 <View style={styles.radarGrid}>
                   {[
-                    { label: 'JUMP', val: athlete.stats.jump, unit: athlete.rawUnits?.jump || '—', icon: '🦘', color: '#22C55E' },
+                    { label: 'JUMP', val: athlete.stats.jump, unit: athlete.rawUnits?.jump || '—', icon: '🦘', color: '#8B5CF6' },
                     { label: 'POWER', val: athlete.stats.power, unit: athlete.rawUnits?.power || '—', icon: '⚡', color: '#FACC15' },
-                    { label: 'SPEED', val: athlete.stats.speed, unit: athlete.rawUnits?.speed || '—', icon: '🏃', color: '#00F0FF' },
-                    { label: 'AGILITY', val: athlete.stats.agility, unit: athlete.rawUnits?.agility || '—', icon: '🔄', color: '#22C55E' },
+                    { label: 'SPEED', val: athlete.stats.speed, unit: athlete.rawUnits?.speed || '—', icon: '🏃', color: '#C084FC' },
+                    { label: 'AGILITY', val: athlete.stats.agility, unit: athlete.rawUnits?.agility || '—', icon: '🔄', color: '#8B5CF6' },
                     { label: 'STAMINA', val: athlete.stats.stamina, unit: athlete.rawUnits?.stamina || '—', icon: '🔋', color: '#A855F7' },
-                    { label: 'TECH', val: athlete.stats.technique, unit: athlete.rawUnits?.technique || '—', icon: '📐', color: '#00F0FF' },
+                    { label: 'TECH', val: athlete.stats.technique, unit: athlete.rawUnits?.technique || '—', icon: '📐', color: '#C084FC' },
                   ].map((item, idx) => (
                     <View key={idx} style={[styles.radarPill, item.val > 0 && { borderColor: item.color, backgroundColor: `${item.color}15` }]}>
                       <Text style={{ fontSize: 16 }}>{item.icon}</Text>
@@ -2464,9 +2464,9 @@ export default function App() {
 
               {athlete.ovr === 0 && (
                 <View style={styles.unrankedHintBox}>
-                  <Ionicons name="information-circle" color="#22C55E" size={18} />
+                  <Ionicons name="information-circle" color="#8B5CF6" size={18} />
                   <Text style={styles.unrankedHintText}>
-                    Record <Text style={{ color: '#22C55E', fontWeight: 'bold' }}>Vertical Jump</Text>, <Text style={{ color: '#00F0FF', fontWeight: 'bold' }}>Sprint 30m</Text>, and <Text style={{ color: '#FACC15', fontWeight: 'bold' }}>Squats</Text> to calibrate all 6 attributes and calculate your verified OVR!
+                    Record <Text style={{ color: '#8B5CF6', fontWeight: 'bold' }}>Vertical Jump</Text>, <Text style={{ color: '#C084FC', fontWeight: 'bold' }}>Sprint 30m</Text>, and <Text style={{ color: '#FACC15', fontWeight: 'bold' }}>Squats</Text> to calibrate all 6 attributes and calculate your verified OVR!
                   </Text>
                 </View>
               )}
@@ -2500,7 +2500,7 @@ export default function App() {
                   style={styles.editProfileTopBtn}
                   onPress={handleOpenEditProfile}
                 >
-                  <Ionicons name="pencil" color="#22C55E" size={14} />
+                  <Ionicons name="pencil" color="#8B5CF6" size={14} />
                   <Text style={styles.editProfileTopText}>{t.edit_profile}</Text>
                 </TouchableOpacity>
               </View>
@@ -2530,10 +2530,10 @@ export default function App() {
                 <Text style={styles.profileBigLoc}>📍 {athlete.district}, {athlete.state}</Text>
 
                 <TouchableOpacity
-                  style={{ marginTop: 6, paddingVertical: 2, paddingHorizontal: 10, backgroundColor: '#161F36', borderRadius: 12 }}
+                  style={{ marginTop: 6, paddingVertical: 2, paddingHorizontal: 10, backgroundColor: '#1E103C', borderRadius: 12 }}
                   onPress={() => setIsPhotoPickerModalOpen(true)}
                 >
-                  <Text style={{ color: '#22C55E', fontSize: 10, fontWeight: 'bold' }}>📷 {t.change_photo}</Text>
+                  <Text style={{ color: '#8B5CF6', fontSize: 10, fontWeight: 'bold' }}>📷 {t.change_photo}</Text>
                 </TouchableOpacity>
 
                 <View style={styles.profileAttrRow}>
@@ -2551,7 +2551,7 @@ export default function App() {
                   </View>
                   <View style={styles.profileAttrBox}>
                     <Text style={styles.profileAttrLabel}>{t.sport}</Text>
-                    <Text style={[styles.profileAttrVal, { fontSize: 9, color: '#22C55E' }]}>
+                    <Text style={[styles.profileAttrVal, { fontSize: 9, color: '#8B5CF6' }]}>
                       {athlete.primarySport.split(',')[0]}
                     </Text>
                   </View>
@@ -2564,13 +2564,13 @@ export default function App() {
               </View>
 
               {/* 🔒 Incognito Stealth Security Badge */}
-              <View style={{ backgroundColor: 'rgba(15,23,42,0.8)', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#334155', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Ionicons name="eye-off" color="#00F0FF" size={20} />
+              <View style={{ backgroundColor: 'rgba(19, 9, 36, 0.8)', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#3B1E6D', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Ionicons name="eye-off" color="#C084FC" size={20} />
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={{ color: '#00F0FF', fontWeight: '900', fontSize: 11 }}>INCOGNITO STEALTH PROTOCOL</Text>
-                    <View style={{ backgroundColor: 'rgba(0,240,255,0.2)', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
-                      <Text style={{ color: '#00F0FF', fontSize: 7, fontWeight: '900' }}>ACTIVE</Text>
+                    <Text style={{ color: '#C084FC', fontWeight: '900', fontSize: 11 }}>INCOGNITO STEALTH PROTOCOL</Text>
+                    <View style={{ backgroundColor: 'rgba(192, 132, 252, 0.2)', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                      <Text style={{ color: '#C084FC', fontSize: 7, fontWeight: '900' }}>ACTIVE</Text>
                     </View>
                   </View>
                   <Text style={{ color: '#94A3B8', fontSize: 10, marginTop: 2 }}>
@@ -2608,8 +2608,8 @@ export default function App() {
             <View style={{ gap: 14 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={styles.pageTitle}>{t.recruit_title}</Text>
-                <View style={[styles.activeAlertsPill, recruitmentAnnouncementsList.length > 0 && { backgroundColor: 'rgba(34,197,94,0.2)' }]}>
-                  <Text style={[styles.activeAlertsPillText, recruitmentAnnouncementsList.length > 0 && { color: '#22C55E' }]}>
+                <View style={[styles.activeAlertsPill, recruitmentAnnouncementsList.length > 0 && { backgroundColor: 'rgba(139, 92, 246, 0.2)' }]}>
+                  <Text style={[styles.activeAlertsPillText, recruitmentAnnouncementsList.length > 0 && { color: '#8B5CF6' }]}>
                     {recruitmentAnnouncementsList.length} Active Invitation{recruitmentAnnouncementsList.length !== 1 ? 's' : ''}
                   </Text>
                 </View>
@@ -2623,7 +2623,7 @@ export default function App() {
                       <View style={styles.recruitmentNoticeHeader}>
                         <View style={{ flex: 1 }}>
                           <View style={styles.directCallUpPill}>
-                            <Ionicons name="sparkles" color="#22C55E" size={12} />
+                            <Ionicons name="sparkles" color="#8B5CF6" size={12} />
                             <Text style={styles.directCallUpText}>OFFICIAL SCOUTING CALL-UP</Text>
                           </View>
                           <Text style={styles.recruitmentNoticeTitle}>{item.title}</Text>
@@ -2669,14 +2669,14 @@ export default function App() {
       {appMode === 'athlete' && (
         <View style={styles.bottomNav}>
           <TouchableOpacity style={styles.navTab} onPress={() => setCurrentTab('home')}>
-            <Ionicons name="home" color={currentTab === 'home' ? '#22C55E' : '#64748B'} size={20} />
+            <Ionicons name="home" color={currentTab === 'home' ? '#8B5CF6' : '#64748B'} size={20} />
             <Text style={[styles.navTabText, currentTab === 'home' && styles.navTabTextActive]}>
               {t.nav_home}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.navTab} onPress={() => setCurrentTab('tests')}>
-            <Ionicons name="fitness" color={currentTab === 'tests' ? '#22C55E' : '#64748B'} size={20} />
+            <Ionicons name="fitness" color={currentTab === 'tests' ? '#8B5CF6' : '#64748B'} size={20} />
             <Text style={[styles.navTabText, currentTab === 'tests' && styles.navTabTextActive]}>
               {t.nav_tests}
             </Text>
@@ -2687,20 +2687,20 @@ export default function App() {
             onPress={() => handleStartDrill(t.v_jump)}
           >
             <View style={styles.navCenterGlowCircle}>
-              <Ionicons name="radio" color="#22C55E" size={24} />
+              <Ionicons name="radio" color="#8B5CF6" size={24} />
             </View>
             <Text style={styles.navCenterText}>{t.nav_record}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.navTab} onPress={() => setCurrentTab('card')}>
-            <Ionicons name="card" color={currentTab === 'card' ? '#22C55E' : '#64748B'} size={20} />
+            <Ionicons name="card" color={currentTab === 'card' ? '#8B5CF6' : '#64748B'} size={20} />
             <Text style={[styles.navTabText, currentTab === 'card' && styles.navTabTextActive]}>
               {t.nav_card}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.navTab} onPress={() => setCurrentTab('profile')}>
-            <Ionicons name="person" color={currentTab === 'profile' ? '#22C55E' : '#64748B'} size={20} />
+            <Ionicons name="person" color={currentTab === 'profile' ? '#8B5CF6' : '#64748B'} size={20} />
             <Text style={[styles.navTabText, currentTab === 'profile' && styles.navTabTextActive]}>
               {t.nav_profile}
             </Text>
@@ -2714,7 +2714,7 @@ export default function App() {
           <View style={[styles.modalContainer, { maxHeight: '90%' }]}>
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name="shield-checkmark" color="#00F0FF" size={16} />
+                <Ionicons name="shield-checkmark" color="#C084FC" size={16} />
                 <Text style={styles.modalTitle}>AI Biomechanics & Video Audit</Text>
               </View>
               <TouchableOpacity onPress={() => setSelectedTalentForAudit(null)}>
@@ -2725,7 +2725,7 @@ export default function App() {
             {selectedTalentForAudit && (
               <ScrollView style={{ paddingVertical: 4 }}>
                 {/* Athlete Top Profile Header */}
-                <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: '#161F36', padding: 12, borderRadius: 14 }}>
+                <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: '#1E103C', padding: 12, borderRadius: 14 }}>
                   {selectedTalentForAudit.avatar ? (
                     <Image source={{ uri: selectedTalentForAudit.avatar }} style={{ width: 50, height: 50, borderRadius: 25 }} />
                   ) : (
@@ -2745,7 +2745,7 @@ export default function App() {
                 {/* 33-Point Skeleton HUD Video Proof Viewfinder with Interactive Scrubber */}
                 <View style={styles.auditVideoBox}>
                   <View style={styles.auditVideoHeader}>
-                    <Text style={{ color: '#00F0FF', fontWeight: 'bold', fontSize: 10 }}>📹 33-POINT SKELETON POSE AUDIT (60 FPS)</Text>
+                    <Text style={{ color: '#C084FC', fontWeight: 'bold', fontSize: 10 }}>📹 33-POINT SKELETON POSE AUDIT (60 FPS)</Text>
                     <View style={styles.recDotRow}>
                       <View style={styles.redRecDot} />
                       <Text style={{ color: '#EF4444', fontSize: 9, fontWeight: 'bold' }}>VERIFIED RAW CLIP</Text>
@@ -2759,13 +2759,13 @@ export default function App() {
                         {auditScrubPhase === 'load' ? '🏋️' : auditScrubPhase === 'takeoff' ? '⚡' : auditScrubPhase === 'apex' ? '🦘' : '👟'}
                       </Text>
                       <View style={[styles.auditSkeletonHUD, { marginTop: 10, width: '92%' }]}>
-                        <Text style={{ color: '#22C55E', fontWeight: 'bold', fontSize: 10 }}>
+                        <Text style={{ color: '#8B5CF6', fontWeight: 'bold', fontSize: 10 }}>
                           {auditScrubPhase === 'load' && '🟢 PHASE 1: ECCENTRIC PRE-STRETCH (92.4° KNEE DEPTH)'}
                           {auditScrubPhase === 'takeoff' && '⚡ PHASE 2: EXPLOSIVE TRIPLE EXTENSION (1,420 N FORCE)'}
                           {auditScrubPhase === 'apex' && `👑 PHASE 3: MAX AIR APEX (${selectedTalentForAudit.jumpVal.split('•')[0]} • 0.63s FLIGHT)`}
                           {auditScrubPhase === 'landing' && '🛡️ PHASE 4: FORCE ABSORPTION & ZERO KNEE COLLAPSE'}
                         </Text>
-                        <Text style={{ color: '#00F0FF', fontSize: 9, marginTop: 2 }}>
+                        <Text style={{ color: '#C084FC', fontSize: 9, marginTop: 2 }}>
                           HIP: 108.4° • SPINE DEVIATION: 0.2° • GROUND REACTION FORCE: 3.4x BW
                         </Text>
                       </View>
@@ -2773,7 +2773,7 @@ export default function App() {
                   </View>
 
                   {/* Interactive Biomechanics Phase Scrubber */}
-                  <View style={{ flexDirection: 'row', backgroundColor: '#0B0F19', padding: 6, gap: 4 }}>
+                  <View style={{ flexDirection: 'row', backgroundColor: '#0B071B', padding: 6, gap: 4 }}>
                     {[
                       { key: 'load', label: '0.6s Loading' },
                       { key: 'takeoff', label: '1.2s Takeoff' },
@@ -2786,7 +2786,7 @@ export default function App() {
                           flex: 1,
                           paddingVertical: 6,
                           borderRadius: 8,
-                          backgroundColor: auditScrubPhase === phase.key ? '#00F0FF' : '#161F36',
+                          backgroundColor: auditScrubPhase === phase.key ? '#C084FC' : '#1E103C',
                           alignItems: 'center',
                         }}
                         onPress={() => setAuditScrubPhase(phase.key as any)}
@@ -2800,7 +2800,7 @@ export default function App() {
                 </View>
 
                 {/* Head-to-Head Comparison Matrix (Moneyball Tool) */}
-                <View style={{ backgroundColor: '#161F36', padding: 12, borderRadius: 14, marginTop: 10, gap: 8 }}>
+                <View style={{ backgroundColor: '#1E103C', padding: 12, borderRadius: 14, marginTop: 10, gap: 8 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 12 }}>📊 HEAD-TO-HEAD COMPARISON</Text>
                     <View style={{ flexDirection: 'row', gap: 4 }}>
@@ -2809,7 +2809,7 @@ export default function App() {
                           paddingHorizontal: 8,
                           paddingVertical: 3,
                           borderRadius: 6,
-                          backgroundColor: auditCompareMode === 'sai_national' ? '#22C55E' : '#0F172A',
+                          backgroundColor: auditCompareMode === 'sai_national' ? '#8B5CF6' : '#130924',
                         }}
                         onPress={() => setAuditCompareMode('sai_national')}
                       >
@@ -2820,7 +2820,7 @@ export default function App() {
                           paddingHorizontal: 8,
                           paddingVertical: 3,
                           borderRadius: 6,
-                          backgroundColor: auditCompareMode === 'district_avg' ? '#22C55E' : '#0F172A',
+                          backgroundColor: auditCompareMode === 'district_avg' ? '#8B5CF6' : '#130924',
                         }}
                         onPress={() => setAuditCompareMode('district_avg')}
                       >
@@ -2835,12 +2835,12 @@ export default function App() {
                       { label: 'Explosive Power', val: selectedTalentForAudit.powerVal.split('•')[0], standard: auditCompareMode === 'sai_national' ? '1,150 W' : '880 W', diff: auditCompareMode === 'sai_national' ? '+23.5%' : '+61.4%' },
                       { label: 'Sprint Gate Velocity', val: selectedTalentForAudit.speedVal.split('•')[0], standard: auditCompareMode === 'sai_national' ? '8.2 m/s' : '7.4 m/s', diff: auditCompareMode === 'sai_national' ? '+8.5%' : '+20.2%' },
                     ].map((comp, idx) => (
-                      <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0F172A', padding: 8, borderRadius: 8 }}>
+                      <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#130924', padding: 8, borderRadius: 8 }}>
                         <Text style={{ color: '#CBD5E1', fontSize: 10, fontWeight: 'bold', width: '38%' }}>{comp.label}</Text>
-                        <Text style={{ color: '#00F0FF', fontSize: 11, fontWeight: '900' }}>{comp.val}</Text>
+                        <Text style={{ color: '#C084FC', fontSize: 11, fontWeight: '900' }}>{comp.val}</Text>
                         <Text style={{ color: '#64748B', fontSize: 9 }}>vs {comp.standard}</Text>
-                        <View style={{ backgroundColor: 'rgba(34,197,94,0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                          <Text style={{ color: '#22C55E', fontWeight: '900', fontSize: 9 }}>{comp.diff}</Text>
+                        <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                          <Text style={{ color: '#8B5CF6', fontWeight: '900', fontSize: 9 }}>{comp.diff}</Text>
                         </View>
                       </View>
                     ))}
@@ -2849,15 +2849,15 @@ export default function App() {
 
                 {/* Anti-Cheat Verification Certificate */}
                 <View style={styles.antiCheatCertBox}>
-                  <Ionicons name="checkmark-done-circle" color="#22C55E" size={24} />
+                  <Ionicons name="checkmark-done-circle" color="#8B5CF6" size={24} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: '#22C55E', fontWeight: 'bold', fontSize: 12 }}>
+                    <Text style={{ color: '#8B5CF6', fontWeight: 'bold', fontSize: 12 }}>
                       Anti-Cheat Verification: PASS (99.8% Authenticity)
                     </Text>
                     <Text style={{ color: '#94A3B8', fontSize: 10, marginTop: 2 }}>
                       Single-shot camera stream with continuous gravity kinematics. No frame-rate tampering or deepfake alterations detected.
                     </Text>
-                    <Text style={{ color: '#00F0FF', fontSize: 8, fontWeight: 'bold', marginTop: 3 }}>
+                    <Text style={{ color: '#C084FC', fontSize: 8, fontWeight: 'bold', marginTop: 3 }}>
                       🔐 Cryptographic Video Fingerprint: SHA256-VIDEO-AUDIT-9842
                     </Text>
                   </View>
@@ -2897,7 +2897,7 @@ export default function App() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Trial Event / Academy</Text>
                   <TextInput
-                    style={[styles.textInput, { color: '#00F0FF' }]}
+                    style={[styles.textInput, { color: '#C084FC' }]}
                     value="Junior State Volleyball Selection Trials 2026"
                     editable={false}
                   />
@@ -2932,7 +2932,7 @@ export default function App() {
                 </View>
 
                 <TouchableOpacity
-                  style={[styles.primaryBtn, { backgroundColor: '#22C55E', marginTop: 10 }]}
+                  style={[styles.primaryBtn, { backgroundColor: '#8B5CF6', marginTop: 10 }]}
                   onPress={() => handleDispatchCallUp(selectedTalentForAudit)}
                 >
                   <Ionicons name="send" color="#000" size={16} />
@@ -2947,9 +2947,9 @@ export default function App() {
       {/* ================= MODAL: DIGITAL TRIAL PASS (QR PASS VIEW) ================= */}
       <Modal visible={!!selectedPassModal} animationType="fade" transparent>
         <View style={styles.modalBackdrop}>
-          <View style={[styles.modalContainer, { backgroundColor: '#070B14', borderColor: '#22C55E', borderWidth: 2 }]}>
+          <View style={[styles.modalContainer, { backgroundColor: '#090514', borderColor: '#8B5CF6', borderWidth: 2 }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: '#22C55E' }]}>🏛️ OFFICIAL DIGITAL TRIAL PASS</Text>
+              <Text style={[styles.modalTitle, { color: '#8B5CF6' }]}>🏛️ OFFICIAL DIGITAL TRIAL PASS</Text>
               <TouchableOpacity onPress={() => setSelectedPassModal(null)}>
                 <Ionicons name="close" color="#94A3B8" size={22} />
               </TouchableOpacity>
@@ -2982,7 +2982,7 @@ export default function App() {
                     📍 <Text style={{ color: '#94A3B8' }}>District / State:</Text> <Text style={{ color: '#FFF', fontWeight: 'bold' }}>{athlete.district}, {athlete.state}</Text>
                   </Text>
                   <Text style={styles.passDetailLine}>
-                    ⭐ <Text style={{ color: '#94A3B8' }}>Verified Rating:</Text> <Text style={{ color: '#22C55E', fontWeight: 'bold' }}>{athlete.ovr > 0 ? `${athlete.ovr} OVR` : 'Verified Prospect'}</Text>
+                    ⭐ <Text style={{ color: '#94A3B8' }}>Verified Rating:</Text> <Text style={{ color: '#8B5CF6', fontWeight: 'bold' }}>{athlete.ovr > 0 ? `${athlete.ovr} OVR` : 'Verified Prospect'}</Text>
                   </Text>
                   <Text style={styles.passDetailLine}>
                     🏛️ <Text style={{ color: '#94A3B8' }}>Issuing Officer:</Text> <Text style={{ color: '#FACC15', fontWeight: 'bold' }}>{selectedPassModal.officer || activeScoutProfile.name}</Text>
@@ -2994,12 +2994,12 @@ export default function App() {
                     📅 <Text style={{ color: '#94A3B8' }}>Date:</Text> <Text style={{ color: '#FFF', fontWeight: 'bold' }}>{selectedPassModal.dates}</Text>
                   </Text>
                   <Text style={[styles.passDetailLine, { borderBottomWidth: 0 }]}>
-                    🔐 <Text style={{ color: '#94A3B8' }}>Crypto Hash:</Text> <Text style={{ color: '#22C55E', fontSize: 9 }}>{selectedPassModal.cryptoHash || 'SHA256-SAI-VERIFIED-AUTH-9F2B'}</Text>
+                    🔐 <Text style={{ color: '#94A3B8' }}>Crypto Hash:</Text> <Text style={{ color: '#8B5CF6', fontSize: 9 }}>{selectedPassModal.cryptoHash || 'SHA256-SAI-VERIFIED-AUTH-9F2B'}</Text>
                   </Text>
                 </View>
 
-                <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', padding: 8, borderRadius: 10, width: '100%', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }}>
-                  <Text style={{ color: '#22C55E', fontWeight: 'bold', fontSize: 10 }}>
+                <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.15)', padding: 8, borderRadius: 10, width: '100%', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.3)' }}>
+                  <Text style={{ color: '#8B5CF6', fontWeight: 'bold', fontSize: 10 }}>
                     🛡️ SAI & SAAP Central Verified • Stadium Gate 1 Scanner Authenticated
                   </Text>
                 </View>
@@ -3138,7 +3138,7 @@ export default function App() {
                   <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>Empty Silhouette</Text>
                   <Text style={{ color: '#64748B', fontSize: 10 }}>Default Instagram-style blank avatar</Text>
                 </View>
-                {!athlete.avatar && <Ionicons name="checkmark-circle" color="#22C55E" size={20} />}
+                {!athlete.avatar && <Ionicons name="checkmark-circle" color="#8B5CF6" size={20} />}
               </TouchableOpacity>
 
               {AVATAR_PRESETS.map((preset) => (
@@ -3152,7 +3152,7 @@ export default function App() {
                     <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>{preset.title}</Text>
                     <Text style={{ color: '#64748B', fontSize: 10 }}>Verified Athlete Portrait</Text>
                   </View>
-                  {athlete.avatar === preset.url && <Ionicons name="checkmark-circle" color="#22C55E" size={20} />}
+                  {athlete.avatar === preset.url && <Ionicons name="checkmark-circle" color="#8B5CF6" size={20} />}
                 </TouchableOpacity>
               ))}
             </View>
@@ -3214,30 +3214,30 @@ export default function App() {
           <View style={styles.cameraBox}>
             <View style={styles.cameraBoxHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="videocam" color="#22C55E" size={18} />
+                <Ionicons name="videocam" color="#8B5CF6" size={18} />
                 <Text style={styles.cameraBoxTitle}>{activeDrillTitle}</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <TouchableOpacity
                   onPress={() => setCameraFacing(prev => prev === 'front' ? 'back' : 'front')}
-                  style={{ backgroundColor: '#1E293B', padding: 6, borderRadius: 10 }}
+                  style={{ backgroundColor: '#2E1854', padding: 6, borderRadius: 10 }}
                 >
-                  <Ionicons name="camera-reverse" color="#00F0FF" size={20} />
+                  <Ionicons name="camera-reverse" color="#C084FC" size={20} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleCloseCameraStudio}
-                  style={{ backgroundColor: '#1E293B', padding: 6, borderRadius: 10 }}
+                  style={{ backgroundColor: '#2E1854', padding: 6, borderRadius: 10 }}
                 >
                   <Ionicons name="close" color="#94A3B8" size={20} />
                 </TouchableOpacity>
               </View>
             </View>
 
-            <View style={[styles.viewfinderArea, { backgroundColor: '#050811', overflow: 'hidden' }]}>
+            <View style={[styles.viewfinderArea, { backgroundColor: '#090514', overflow: 'hidden' }]}>
               {cameraPermission && !cameraPermission.granted ? (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#050811' }}>
-                  <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(0,240,255,0.12)', justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 1.5, borderColor: '#00F0FF' }}>
-                    <Ionicons name="camera-outline" color="#00F0FF" size={36} />
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#090514' }}>
+                  <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(192, 132, 252, 0.12)', justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 1.5, borderColor: '#C084FC' }}>
+                    <Ionicons name="camera-outline" color="#C084FC" size={36} />
                   </View>
                   <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '900', textAlign: 'center', marginBottom: 8 }}>
                     Camera Access Required
@@ -3246,7 +3246,7 @@ export default function App() {
                     SportLens requires camera access to perform live AI computer vision and vertical jump biomechanics.
                   </Text>
                   <TouchableOpacity
-                    style={{ backgroundColor: '#22C55E', paddingHorizontal: 22, paddingVertical: 13, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                    style={{ backgroundColor: '#8B5CF6', paddingHorizontal: 22, paddingVertical: 13, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}
                     onPress={async () => {
                       const res = await requestCameraPermission();
                       if (!res.granted) {
@@ -3270,15 +3270,15 @@ export default function App() {
                   />
 
                   {/* 2. SCI-FI HUD CORNER BRACKETS */}
-                  <View pointerEvents="none" style={{ position: 'absolute', top: 12, left: 12, width: 22, height: 22, borderTopWidth: 3, borderLeftWidth: 3, borderColor: '#00F0FF' }} />
-                  <View pointerEvents="none" style={{ position: 'absolute', top: 12, right: 12, width: 22, height: 22, borderTopWidth: 3, borderRightWidth: 3, borderColor: '#00F0FF' }} />
-                  <View pointerEvents="none" style={{ position: 'absolute', bottom: 12, left: 12, width: 22, height: 22, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: '#22C55E' }} />
-                  <View pointerEvents="none" style={{ position: 'absolute', bottom: 12, right: 12, width: 22, height: 22, borderBottomWidth: 3, borderRightWidth: 3, borderColor: '#22C55E' }} />
+                  <View pointerEvents="none" style={{ position: 'absolute', top: 12, left: 12, width: 22, height: 22, borderTopWidth: 3, borderLeftWidth: 3, borderColor: '#C084FC' }} />
+                  <View pointerEvents="none" style={{ position: 'absolute', top: 12, right: 12, width: 22, height: 22, borderTopWidth: 3, borderRightWidth: 3, borderColor: '#C084FC' }} />
+                  <View pointerEvents="none" style={{ position: 'absolute', bottom: 12, left: 12, width: 22, height: 22, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: '#8B5CF6' }} />
+                  <View pointerEvents="none" style={{ position: 'absolute', bottom: 12, right: 12, width: 22, height: 22, borderBottomWidth: 3, borderRightWidth: 3, borderColor: '#8B5CF6' }} />
 
                   {/* 3. CENTER ATHLETE ALIGNMENT TARGET FRAME */}
                   <View pointerEvents="none" style={styles.viewfinderFrame}>
                     <View style={{ alignItems: 'center', opacity: drillPhase === 'recording' ? 0.35 : 0.85 }}>
-                      <Ionicons name="body-outline" color="#00F0FF" size={96} />
+                      <Ionicons name="body-outline" color="#C084FC" size={96} />
                       <Text style={styles.skeletonStatusText}>
                         {drillPhase === 'recording' ? '⚡ 60 FPS COMPUTER VISION ACTIVE' : '👤 ALIGN BODY IN FRAME (6-8 FT)'}
                       </Text>
@@ -3287,9 +3287,9 @@ export default function App() {
 
                   {/* 4. TOP HUD BAR (SEPARATED, NO OVERLAPS) */}
                   <View pointerEvents="none" style={{ position: 'absolute', top: 14, left: 14, right: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', zIndex: 5 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1.2, borderColor: '#00F0FF' }}>
-                      <Ionicons name="flash" color="#00F0FF" size={13} />
-                      <Text style={{ color: '#00F0FF', fontSize: 10.5, fontWeight: '900', letterSpacing: 0.5 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(9, 5, 20, 0.92)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1.2, borderColor: '#C084FC' }}>
+                      <Ionicons name="flash" color="#C084FC" size={13} />
+                      <Text style={{ color: '#C084FC', fontSize: 10.5, fontWeight: '900', letterSpacing: 0.5 }}>
                         {activeDrillTitle.toUpperCase()}
                       </Text>
                     </View>
@@ -3302,15 +3302,15 @@ export default function App() {
                         </Text>
                       </View>
                     ) : drillPhase === 'countdown' ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(2,132,199,0.3)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#0284C7' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(139, 92, 246, 0.3)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#8B5CF6' }}>
                         <Text style={{ color: '#38BDF8', fontWeight: '900', fontSize: 10.5 }}>
                           ⏳ STARTING...
                         </Text>
                       </View>
                     ) : (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1.2, borderColor: '#22C55E' }}>
-                        <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#22C55E' }} />
-                        <Text style={{ color: '#22C55E', fontWeight: '900', fontSize: 10.5 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(9, 5, 20, 0.92)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1.2, borderColor: '#8B5CF6' }}>
+                        <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#8B5CF6' }} />
+                        <Text style={{ color: '#8B5CF6', fontWeight: '900', fontSize: 10.5 }}>
                           60 FPS READY
                         </Text>
                       </View>
@@ -3319,13 +3319,13 @@ export default function App() {
 
                   {/* 5. BOTTOM PROMPT BANNER */}
                   <View pointerEvents="none" style={{ position: 'absolute', bottom: 12, left: 14, right: 14, alignItems: 'center', zIndex: 5 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(5,8,17,0.92)', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 14, borderWidth: 1, borderColor: drillPhase === 'recording' ? '#22C55E' : '#334155' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(9, 5, 20, 0.92)', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 14, borderWidth: 1, borderColor: drillPhase === 'recording' ? '#8B5CF6' : '#3B1E6D' }}>
                       <Ionicons
                         name={drillPhase === 'recording' ? 'videocam' : 'phone-portrait-outline'}
-                        color={drillPhase === 'recording' ? '#22C55E' : '#00F0FF'}
+                        color={drillPhase === 'recording' ? '#8B5CF6' : '#C084FC'}
                         size={14}
                       />
-                      <Text style={{ color: drillPhase === 'recording' ? '#22C55E' : '#94A3B8', fontSize: 10.5, fontWeight: 'bold' }}>
+                      <Text style={{ color: drillPhase === 'recording' ? '#8B5CF6' : '#94A3B8', fontSize: 10.5, fontWeight: 'bold' }}>
                         {drillPhase === 'recording'
                           ? `🎥 Recording physical drill (${recordDurationSec}s) • Tap STOP below when done`
                           : '📱 Prop phone on ground or wall & step back 6–8 feet'}
@@ -3336,12 +3336,12 @@ export default function App() {
                   {/* 6. COUNTDOWN 3-2-1 GLOWING HUD */}
                   {drillPhase === 'countdown' && (
                     <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
-                      <View style={{ width: 120, height: 120, borderRadius: 60, borderWidth: 4, borderColor: '#00F0FF', backgroundColor: 'rgba(0,240,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                      <View style={{ width: 120, height: 120, borderRadius: 60, borderWidth: 4, borderColor: '#C084FC', backgroundColor: 'rgba(192, 132, 252, 0.15)', justifyContent: 'center', alignItems: 'center' }}>
                         <Text style={{ color: '#FFF', fontSize: 56, fontWeight: '900' }}>
                           {countdownNumber > 0 ? countdownNumber : '🔥'}
                         </Text>
                       </View>
-                      <Text style={{ color: '#00F0FF', fontWeight: '900', fontSize: 16, marginTop: 14, letterSpacing: 2 }}>
+                      <Text style={{ color: '#C084FC', fontWeight: '900', fontSize: 16, marginTop: 14, letterSpacing: 2 }}>
                         {countdownNumber > 0 ? 'GET READY...' : 'GO! PERFORM DRILL!'}
                       </Text>
                       <Text style={{ color: '#94A3B8', fontSize: 11, marginTop: 4 }}>
@@ -3353,8 +3353,8 @@ export default function App() {
                   {/* 7. ANALYZING AI OVERLAY */}
                   {drillPhase === 'analyzing' && (
                     <View style={styles.countdownBigOverlay}>
-                      <ActivityIndicator size="large" color="#22C55E" style={{ marginBottom: 12 }} />
-                      <Text style={{ color: '#22C55E', fontSize: 17, fontWeight: 'bold' }}>
+                      <ActivityIndicator size="large" color="#8B5CF6" style={{ marginBottom: 12 }} />
+                      <Text style={{ color: '#8B5CF6', fontSize: 17, fontWeight: 'bold' }}>
                         🤖 AI Analyzing Biomechanics...
                       </Text>
                       <Text style={{ color: '#94A3B8', fontSize: 11, marginTop: 4, textAlign: 'center', maxWidth: 260 }}>
@@ -3367,10 +3367,10 @@ export default function App() {
             </View>
 
             {/* Bottom Controls Bar */}
-            <View style={{ padding: 12, backgroundColor: '#0F172A', borderTopWidth: 1, borderTopColor: '#1E293B' }}>
+            <View style={{ padding: 12, backgroundColor: '#130924', borderTopWidth: 1, borderTopColor: '#2E1854' }}>
               {drillPhase === 'standby' && (
                 <TouchableOpacity
-                  style={[styles.primaryBtn, { backgroundColor: '#22C55E' }]}
+                  style={[styles.primaryBtn, { backgroundColor: '#8B5CF6' }]}
                   onPress={handleStartManualRecording}
                 >
                   <Ionicons name="videocam" color="#000" size={18} />
@@ -3379,7 +3379,7 @@ export default function App() {
               )}
 
               {drillPhase === 'countdown' && (
-                <View style={[styles.primaryBtn, { backgroundColor: '#0284C7', opacity: 0.9 }]}>
+                <View style={[styles.primaryBtn, { backgroundColor: '#8B5CF6', opacity: 0.9 }]}>
                   <Text style={[styles.primaryBtnText, { color: '#FFF' }]}>
                     ⏳ GET IN POSITION... ({countdownNumber}s)
                   </Text>
@@ -3420,15 +3420,15 @@ export default function App() {
               <Text style={styles.reportScoreNumber}>
                 {calculatedScore} <Text style={{ fontSize: 14, color: '#94A3B8' }}>/ 100</Text>
               </Text>
-              <View style={{ backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, marginTop: 4 }}>
-                <Text style={{ color: '#22C55E', fontWeight: 'bold', fontSize: 10 }}>
+              <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.15)', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, marginTop: 4 }}>
+                <Text style={{ color: '#8B5CF6', fontWeight: 'bold', fontSize: 10 }}>
                   🎯 UPDATED STATS: {calibratedAttributesList.join(' • ')}
                 </Text>
               </View>
             </View>
 
             <View style={styles.reportVoiceCard}>
-              <Text style={{ color: '#22C55E', fontWeight: 'bold', fontSize: 12 }}>
+              <Text style={{ color: '#8B5CF6', fontWeight: 'bold', fontSize: 12 }}>
                 🤖 {t.ai_coach_title}:
               </Text>
               <Text style={{ color: '#FEF08A', fontSize: 12, marginTop: 4 }}>
@@ -3563,7 +3563,7 @@ export default function App() {
                       <Text style={[styles.geoItemText, isSelected && { color: '#000', fontWeight: '900' }]}>
                         🏛️ {st}
                       </Text>
-                      <Text style={{ color: isSelected ? '#334155' : '#94A3B8', fontSize: 10, marginTop: 1 }}>
+                      <Text style={{ color: isSelected ? '#3B1E6D' : '#94A3B8', fontSize: 10, marginTop: 1 }}>
                         {districtCount} Districts
                       </Text>
                     </View>
@@ -3657,7 +3657,7 @@ export default function App() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#070B14',
+    backgroundColor: '#090514',
   },
   scrollFlex: { flex: 1 },
 
@@ -3678,12 +3678,12 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: 'rgba(34,197,94,0.15)',
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
     borderWidth: 1.5,
-    borderColor: 'rgba(34,197,94,0.3)',
+    borderColor: 'rgba(139, 92, 246, 0.3)',
   },
   loginTitle: { fontSize: 30, fontWeight: '900', color: '#FFF', letterSpacing: 0.5 },
   loginSubtitle: { fontSize: 12, color: '#94A3B8', marginTop: 4, textAlign: 'center' },
@@ -3691,12 +3691,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#130924',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: '#2E1854',
     marginBottom: 24,
   },
   loginLangText: { color: '#FFF', fontSize: 12 },
@@ -3705,7 +3705,7 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: '#1E293B',
+    borderColor: '#2E1854',
     overflow: 'hidden',
   },
   welcomeChoiceGradient: {
@@ -3718,14 +3718,14 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(34,197,94,0.15)',
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   welcomeChoiceTitle: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#22C55E',
+    color: '#8B5CF6',
     marginBottom: 4,
   },
   welcomeChoiceDesc: {
@@ -3736,20 +3736,20 @@ const styles = StyleSheet.create({
 
   loginCard: {
     width: '100%',
-    backgroundColor: '#0F172A',
+    backgroundColor: '#130924',
     borderRadius: 24,
     padding: 18,
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: '#2E1854',
   },
   authSegmentRow: {
     flexDirection: 'row',
-    backgroundColor: '#161F36',
+    backgroundColor: '#1E103C',
     borderRadius: 14,
     padding: 4,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: '#2E1854',
   },
   authSegmentTab: {
     flex: 1,
@@ -3761,7 +3761,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   authSegmentTabActiveGreen: {
-    backgroundColor: '#22C55E',
+    backgroundColor: '#8B5CF6',
   },
   authSegmentTabActiveGold: {
     backgroundColor: '#FACC15',
@@ -3779,7 +3779,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#161F36',
+    backgroundColor: '#1E103C',
     padding: 14,
     borderRadius: 16,
     borderWidth: 1.5,
@@ -3791,7 +3791,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   backBtnText: {
-    color: '#22C55E',
+    color: '#8B5CF6',
     fontWeight: 'bold',
     fontSize: 12,
   },
@@ -3811,17 +3811,17 @@ const styles = StyleSheet.create({
   inputGroup: { marginBottom: 12 },
   inputLabel: { fontSize: 11, fontWeight: 'bold', color: '#94A3B8', marginBottom: 4 },
   textInput: {
-    backgroundColor: '#161F36',
+    backgroundColor: '#1E103C',
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 10,
     color: '#FFF',
     fontSize: 13,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#3B1E6D',
   },
   primaryBtn: {
-    backgroundColor: '#22C55E',
+    backgroundColor: '#8B5CF6',
     borderRadius: 16,
     paddingVertical: 12,
     alignItems: 'center',
@@ -3830,7 +3830,7 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 6,
   },
-  primaryBtnText: { color: '#000', fontWeight: '900', fontSize: 13 },
+  primaryBtnText: { color: '#FFF', fontWeight: '900', fontSize: 13 },
 
   // Header Bar & Mode Switcher
   headerBar: {
@@ -3840,15 +3840,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
-    backgroundColor: '#070B14',
+    borderBottomColor: '#2E1854',
+    backgroundColor: '#090514',
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerLogo: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: 'rgba(34,197,94,0.15)',
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -3863,19 +3863,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   modeSwitcherBtnScout: {
-    backgroundColor: 'rgba(0,240,255,0.12)',
-    borderColor: '#00F0FF',
+    backgroundColor: 'rgba(192, 132, 252, 0.12)',
+    borderColor: '#C084FC',
   },
   modeSwitcherBtnAthlete: {
-    backgroundColor: 'rgba(34,197,94,0.12)',
-    borderColor: '#22C55E',
+    backgroundColor: 'rgba(139, 92, 246, 0.12)',
+    borderColor: '#8B5CF6',
   },
   modeSwitcherText: { fontSize: 10, fontWeight: '900' },
   headerBellBtn: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#2E1854',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -3896,7 +3896,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#2E1854',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 14,
@@ -3911,24 +3911,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: '#2E1854',
   },
   greetingPill: {
-    backgroundColor: 'rgba(34,197,94,0.15)',
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
     alignSelf: 'flex-start',
     marginBottom: 4,
   },
-  greetingPillText: { color: '#22C55E', fontSize: 11, fontWeight: 'bold' },
+  greetingPillText: { color: '#8B5CF6', fontSize: 11, fontWeight: 'bold' },
   heroBannerHeading: { fontSize: 14, fontWeight: '900', color: '#FFF', lineHeight: 18 },
   heroBannerSub: { fontSize: 10, color: '#94A3B8', marginTop: 3 },
   heroBannerIconBox: {
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: 'rgba(6,182,212,0.15)',
+    backgroundColor: 'rgba(168, 85, 247, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -3936,26 +3936,26 @@ const styles = StyleSheet.create({
   // Section Headers
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sectionHeading: { fontSize: 11, fontWeight: '900', color: '#94A3B8', letterSpacing: 0.5 },
-  sectionLink: { fontSize: 11, fontWeight: 'bold', color: '#22C55E' },
+  sectionLink: { fontSize: 11, fontWeight: 'bold', color: '#8B5CF6' },
 
   // Quick Drills
   quickDrillsRow: { flexDirection: 'row', gap: 8 },
   quickDrillCard: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#130924',
     borderRadius: 16,
     padding: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: '#2E1854',
   },
   quickDrillEmoji: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   quickDrillLabel: { color: '#FFF', fontSize: 10, fontWeight: 'bold', textAlign: 'center' },
 
   // Progress Grid
-  progressCard: { backgroundColor: '#0F172A', borderRadius: 20, padding: 12, borderWidth: 1, borderColor: '#1E293B' },
+  progressCard: { backgroundColor: '#130924', borderRadius: 20, padding: 12, borderWidth: 1, borderColor: '#2E1854' },
   progressGrid: { flexDirection: 'row', gap: 6, marginTop: 8 },
-  progressGridBox: { flex: 1, backgroundColor: '#161F36', borderRadius: 12, padding: 8, alignItems: 'center' },
+  progressGridBox: { flex: 1, backgroundColor: '#1E103C', borderRadius: 12, padding: 8, alignItems: 'center' },
   progressBoxLabel: { fontSize: 8, color: '#94A3B8', fontWeight: 'bold' },
   progressBoxVal: { fontSize: 14, color: '#FFF', fontWeight: '900', marginTop: 2 },
 
@@ -3963,30 +3963,30 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 17, fontWeight: '900', color: '#FFF' },
   pageSub: { fontSize: 11, color: '#94A3B8', marginTop: 2 },
   drillRowItem: {
-    backgroundColor: '#0F172A',
+    backgroundColor: '#130924',
     borderRadius: 16,
     padding: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: '#2E1854',
   },
-  drillItemIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#161F36', alignItems: 'center', justifyContent: 'center' },
+  drillItemIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#1E103C', alignItems: 'center', justifyContent: 'center' },
   drillItemTitle: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
   drillItemTag: { fontSize: 8, fontWeight: 'bold' },
   drillItemDesc: { color: '#94A3B8', fontSize: 10, marginTop: 2 },
 
   // Gold Player Card
   goldCardWrap: { borderRadius: 24, padding: 2.5, shadowColor: '#EAB308', shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 },
-  goldCardBody: { backgroundColor: '#070B14', borderRadius: 22, padding: 14 },
+  goldCardBody: { backgroundColor: '#090514', borderRadius: 22, padding: 14 },
   goldCardHeader: { flexDirection: 'row', justifyContent: 'space-between' },
   ovrNumber: { fontSize: 32, fontWeight: '900', color: '#FDE047', lineHeight: 34 },
   ovrText: { fontSize: 9, fontWeight: '900', color: '#FACC15' },
   athPill: { backgroundColor: 'rgba(234,179,8,0.2)', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, marginTop: 2 },
   athPillText: { color: '#FDE047', fontSize: 8, fontWeight: 'bold' },
-  cardRankPill: { backgroundColor: 'rgba(34,197,94,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#22C55E' },
-  cardRankPillText: { color: '#22C55E', fontSize: 8, fontWeight: '900' },
+  cardRankPill: { backgroundColor: 'rgba(139, 92, 246, 0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#8B5CF6' },
+  cardRankPillText: { color: '#8B5CF6', fontSize: 8, fontWeight: '900' },
   indianFlag: { width: 26, height: 14, borderRadius: 2, overflow: 'hidden', borderWidth: 0.5, borderColor: '#64748B' },
   athleteAvatarBox: { alignItems: 'center', marginVertical: 6 },
   athleteAvatarImg: { width: 72, height: 72, borderRadius: 36, borderWidth: 2, borderColor: '#FACC15' },
@@ -3996,7 +3996,7 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     borderWidth: 2,
     borderColor: '#FACC15',
-    backgroundColor: '#161F36',
+    backgroundColor: '#1E103C',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -4005,37 +4005,37 @@ const styles = StyleSheet.create({
   statBarsList: { marginTop: 10, gap: 6 },
   singleStatRowPrecise: { gap: 2 },
   statLabelText: { width: 64, fontSize: 9, color: '#CBD5E1', fontWeight: 'bold' },
-  statUnitText: { flex: 1, fontSize: 8, color: '#22C55E', fontWeight: 'bold', textAlign: 'right', paddingRight: 6 },
-  statBarTrack: { height: 5, backgroundColor: '#1E293B', borderRadius: 3, overflow: 'hidden' },
+  statUnitText: { flex: 1, fontSize: 8, color: '#8B5CF6', fontWeight: 'bold', textAlign: 'right', paddingRight: 6 },
+  statBarTrack: { height: 5, backgroundColor: '#2E1854', borderRadius: 3, overflow: 'hidden' },
   statBarProgress: { height: '100%', borderRadius: 3 },
   statValText: { width: 22, fontSize: 10, color: '#FFF', fontWeight: '900', textAlign: 'right' },
 
   // Radar Matrix Card
-  radarCard: { backgroundColor: '#0F172A', borderRadius: 20, padding: 12, borderWidth: 1, borderColor: '#1E293B' },
+  radarCard: { backgroundColor: '#130924', borderRadius: 20, padding: 12, borderWidth: 1, borderColor: '#2E1854' },
   radarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   radarPill: {
     flexBasis: '31%',
     flexGrow: 1,
-    backgroundColor: '#161F36',
+    backgroundColor: '#1E103C',
     borderRadius: 12,
     padding: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: '#2E1854',
   },
-  radarPillActive: { borderColor: 'rgba(34,197,94,0.4)', backgroundColor: 'rgba(34,197,94,0.08)' },
+  radarPillActive: { borderColor: 'rgba(139, 92, 246, 0.4)', backgroundColor: 'rgba(139, 92, 246, 0.08)' },
   radarPillLabel: { color: '#94A3B8', fontSize: 8, fontWeight: '900', marginTop: 2 },
   radarPillVal: { color: '#64748B', fontSize: 12, fontWeight: '900', marginTop: 1 },
 
   unrankedHintBox: {
-    backgroundColor: '#0F172A',
+    backgroundColor: '#130924',
     borderRadius: 16,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: '#2E1854',
   },
   unrankedHintText: {
     color: '#94A3B8',
@@ -4049,22 +4049,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(34,197,94,0.15)',
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 14,
   },
-  editProfileTopText: { color: '#22C55E', fontSize: 11, fontWeight: 'bold' },
-  profileCard: { backgroundColor: '#0F172A', borderRadius: 20, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: '#1E293B' },
+  editProfileTopText: { color: '#8B5CF6', fontSize: 11, fontWeight: 'bold' },
+  profileCard: { backgroundColor: '#130924', borderRadius: 20, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: '#2E1854' },
   profileAvatarTouchable: { position: 'relative', marginBottom: 6 },
-  profileBigAvatar: { width: 68, height: 68, borderRadius: 34, borderWidth: 2, borderColor: '#22C55E' },
+  profileBigAvatar: { width: 68, height: 68, borderRadius: 34, borderWidth: 2, borderColor: '#8B5CF6' },
   profileDefaultSilhouette: {
     width: 68,
     height: 68,
     borderRadius: 34,
     borderWidth: 2,
-    borderColor: '#334155',
-    backgroundColor: '#161F36',
+    borderColor: '#3B1E6D',
+    backgroundColor: '#1E103C',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -4075,19 +4075,19 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#22C55E',
+    backgroundColor: '#8B5CF6',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#0F172A',
+    borderColor: '#130924',
   },
   profileBigName: { color: '#FFF', fontSize: 15, fontWeight: 'bold' },
   profileBigLoc: { color: '#94A3B8', fontSize: 10, marginTop: 1 },
   profileAttrRow: { flexDirection: 'row', gap: 6, marginTop: 10, width: '100%' },
-  profileAttrBox: { flex: 1, backgroundColor: '#161F36', padding: 6, borderRadius: 10, alignItems: 'center' },
+  profileAttrBox: { flex: 1, backgroundColor: '#1E103C', padding: 6, borderRadius: 10, alignItems: 'center' },
   profileAttrLabel: { color: '#94A3B8', fontSize: 8, fontWeight: 'bold' },
   profileAttrVal: { color: '#FFF', fontSize: 11, fontWeight: '900', marginTop: 1 },
-  aboutBox: { backgroundColor: '#0F172A', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: '#1E293B' },
+  aboutBox: { backgroundColor: '#130924', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: '#2E1854' },
   aboutBoxTitle: { color: '#94A3B8', fontSize: 8, fontWeight: '900', letterSpacing: 0.5, marginBottom: 2 },
   aboutBoxText: { color: '#E2E8F0', fontSize: 10, lineHeight: 14 },
   logoutBtn: {
@@ -4104,96 +4104,96 @@ const styles = StyleSheet.create({
   logoutBtnText: { color: '#F87171', fontWeight: 'bold', fontSize: 12 },
 
   // ================= RECRUITER POV STYLES =================
-  scoutBanner: { borderRadius: 20, padding: 14, borderWidth: 1, borderColor: '#1E293B' },
-  scoutAvatarCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(0,240,255,0.15)', alignItems: 'center', justifyContent: 'center' },
+  scoutBanner: { borderRadius: 20, padding: 14, borderWidth: 1, borderColor: '#2E1854' },
+  scoutAvatarCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(192, 132, 252, 0.15)', alignItems: 'center', justifyContent: 'center' },
   scoutName: { color: '#FFF', fontWeight: '900', fontSize: 14 },
-  scoutVerifiedBadge: { backgroundColor: 'rgba(34,197,94,0.2)', paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 6 },
-  scoutVerifiedText: { color: '#22C55E', fontWeight: '900', fontSize: 8 },
+  scoutVerifiedBadge: { backgroundColor: 'rgba(139, 92, 246, 0.2)', paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 6 },
+  scoutVerifiedText: { color: '#8B5CF6', fontWeight: '900', fontSize: 8 },
   scoutSub: { color: '#94A3B8', fontSize: 10, marginTop: 1 },
-  scoutId: { color: '#00F0FF', fontSize: 9, fontWeight: 'bold', marginTop: 2 },
-  scoutStatsStrip: { flexDirection: 'row', gap: 6, marginTop: 12, borderTopWidth: 1, borderTopColor: '#1E293B', paddingTop: 10 },
-  scoutStatItem: { flex: 1, backgroundColor: '#161F36', padding: 6, borderRadius: 10, alignItems: 'center' },
+  scoutId: { color: '#C084FC', fontSize: 9, fontWeight: 'bold', marginTop: 2 },
+  scoutStatsStrip: { flexDirection: 'row', gap: 6, marginTop: 12, borderTopWidth: 1, borderTopColor: '#2E1854', paddingTop: 10 },
+  scoutStatItem: { flex: 1, backgroundColor: '#1E103C', padding: 6, borderRadius: 10, alignItems: 'center' },
   scoutStatNum: { color: '#FFF', fontWeight: '900', fontSize: 14 },
   scoutStatLabel: { color: '#94A3B8', fontSize: 8, fontWeight: 'bold' },
 
-  scoutFilterPill: { backgroundColor: '#0F172A', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#1E293B' },
-  scoutFilterPillActive: { backgroundColor: 'rgba(0,240,255,0.15)', borderColor: '#00F0FF' },
+  scoutFilterPill: { backgroundColor: '#130924', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#2E1854' },
+  scoutFilterPillActive: { backgroundColor: 'rgba(192, 132, 252, 0.15)', borderColor: '#C084FC' },
   scoutFilterText: { color: '#94A3B8', fontSize: 10, fontWeight: 'bold' },
-  scoutFilterTextActive: { color: '#00F0FF' },
+  scoutFilterTextActive: { color: '#C084FC' },
 
-  viewMorePill: { backgroundColor: 'rgba(34,197,94,0.12)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' },
-  viewMorePillText: { color: '#22C55E', fontSize: 10, fontWeight: 'bold' },
+  viewMorePill: { backgroundColor: 'rgba(139, 92, 246, 0.12)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.3)' },
+  viewMorePillText: { color: '#8B5CF6', fontSize: 10, fontWeight: 'bold' },
 
-  geoModalBox: { backgroundColor: '#0F172A', borderRadius: 24, padding: 18, width: '92%', maxHeight: '85%', borderWidth: 1, borderColor: '#1E293B' },
-  geoSearchInput: { backgroundColor: '#161F36', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, color: '#FFF', fontSize: 13, borderWidth: 1, borderColor: '#1E293B', marginBottom: 12 },
-  geoItemRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, marginBottom: 6, backgroundColor: '#161F36' },
-  geoItemRowActive: { backgroundColor: '#22C55E' },
+  geoModalBox: { backgroundColor: '#130924', borderRadius: 24, padding: 18, width: '92%', maxHeight: '85%', borderWidth: 1, borderColor: '#2E1854' },
+  geoSearchInput: { backgroundColor: '#1E103C', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, color: '#FFF', fontSize: 13, borderWidth: 1, borderColor: '#2E1854', marginBottom: 12 },
+  geoItemRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, marginBottom: 6, backgroundColor: '#1E103C' },
+  geoItemRowActive: { backgroundColor: '#8B5CF6' },
   geoItemText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
-  geoItemTextActive: { color: '#000', fontWeight: '900' },
+  geoItemTextActive: { color: '#FFF', fontWeight: '900' },
 
-  talentCard: { backgroundColor: '#0F172A', borderRadius: 20, padding: 12, borderWidth: 1, borderColor: '#1E293B', gap: 8 },
-  talentAvatar: { width: 56, height: 56, borderRadius: 28, borderWidth: 1.5, borderColor: '#00F0FF' },
-  talentAvatarPlaceholder: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#161F36', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#334155' },
+  talentCard: { backgroundColor: '#130924', borderRadius: 20, padding: 12, borderWidth: 1, borderColor: '#2E1854', gap: 8 },
+  talentAvatar: { width: 56, height: 56, borderRadius: 28, borderWidth: 1.5, borderColor: '#C084FC' },
+  talentAvatarPlaceholder: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#1E103C', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#3B1E6D' },
   talentName: { color: '#FFF', fontWeight: '900', fontSize: 14 },
   talentLoc: { color: '#94A3B8', fontSize: 9, marginTop: 1 },
-  talentSport: { color: '#00F0FF', fontSize: 10, fontWeight: 'bold', marginTop: 2 },
+  talentSport: { color: '#C084FC', fontSize: 10, fontWeight: 'bold', marginTop: 2 },
   talentOvrBadge: { backgroundColor: '#FACC15', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, alignItems: 'center' },
   talentOvrNum: { color: '#000', fontWeight: '900', fontSize: 14 },
   talentOvrText: { color: '#000', fontSize: 7, fontWeight: '900' },
   talentMetricsRow: { flexDirection: 'row', gap: 4, marginTop: 6 },
-  talentMetricPill: { flex: 1, backgroundColor: '#161F36', padding: 4, borderRadius: 8, alignItems: 'center' },
+  talentMetricPill: { flex: 1, backgroundColor: '#1E103C', padding: 4, borderRadius: 8, alignItems: 'center' },
   talentMetricLabel: { color: '#94A3B8', fontSize: 7, fontWeight: 'bold' },
   talentMetricVal: { color: '#FFF', fontSize: 9, fontWeight: '900' },
   talentActionRow: { flexDirection: 'row', gap: 6, marginTop: 4 },
-  talentAuditBtn: { flex: 1, backgroundColor: 'rgba(0,240,255,0.12)', paddingVertical: 8, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 4, borderWidth: 1, borderColor: 'rgba(0,240,255,0.3)' },
-  talentAuditBtnText: { color: '#00F0FF', fontWeight: 'bold', fontSize: 10 },
-  talentCallUpBtn: { flex: 1, backgroundColor: '#22C55E', paddingVertical: 8, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 4 },
-  talentCallUpBtnText: { color: '#000', fontWeight: '900', fontSize: 10 },
+  talentAuditBtn: { flex: 1, backgroundColor: 'rgba(192, 132, 252, 0.12)', paddingVertical: 8, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 4, borderWidth: 1, borderColor: 'rgba(192, 132, 252, 0.3)' },
+  talentAuditBtnText: { color: '#C084FC', fontWeight: 'bold', fontSize: 10 },
+  talentCallUpBtn: { flex: 1, backgroundColor: '#8B5CF6', paddingVertical: 8, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 4 },
+  talentCallUpBtnText: { color: '#FFF', fontWeight: '900', fontSize: 10 },
 
   // Audit Modal Styles
-  auditVideoBox: { backgroundColor: '#000', borderRadius: 14, overflow: 'hidden', marginTop: 10, borderWidth: 1, borderColor: '#1E293B' },
-  auditVideoHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 8, backgroundColor: '#0F172A' },
-  auditVideoViewfinder: { height: 160, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0B0F19' },
+  auditVideoBox: { backgroundColor: '#000', borderRadius: 14, overflow: 'hidden', marginTop: 10, borderWidth: 1, borderColor: '#2E1854' },
+  auditVideoHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 8, backgroundColor: '#130924' },
+  auditVideoViewfinder: { height: 160, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0B071B' },
   auditSkeletonHUD: { position: 'absolute', bottom: 8, left: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.7)', padding: 6, borderRadius: 8 },
-  antiCheatCertBox: { flexDirection: 'row', gap: 10, backgroundColor: 'rgba(34,197,94,0.12)', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)', marginTop: 10, alignItems: 'center' },
+  antiCheatCertBox: { flexDirection: 'row', gap: 10, backgroundColor: 'rgba(139, 92, 246, 0.12)', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.3)', marginTop: 10, alignItems: 'center' },
   auditMetricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
-  auditMetricBox: { flexBasis: '48%', backgroundColor: '#161F36', padding: 8, borderRadius: 10 },
+  auditMetricBox: { flexBasis: '48%', backgroundColor: '#1E103C', padding: 8, borderRadius: 10 },
   auditMetricLabel: { color: '#94A3B8', fontSize: 8, fontWeight: 'bold' },
   auditMetricVal: { color: '#FFF', fontSize: 12, fontWeight: '900', marginTop: 2 },
 
   // Athlete Recruitment Tab Styles
-  recruitmentNoticeCard: { backgroundColor: '#0F172A', borderRadius: 20, padding: 14, borderWidth: 1.5, borderColor: '#22C55E', gap: 8 },
+  recruitmentNoticeCard: { backgroundColor: '#130924', borderRadius: 20, padding: 14, borderWidth: 1.5, borderColor: '#8B5CF6', gap: 8 },
   recruitmentNoticeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  directCallUpPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(34,197,94,0.2)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, alignSelf: 'flex-start', marginBottom: 4 },
-  directCallUpText: { color: '#22C55E', fontWeight: '900', fontSize: 9 },
+  directCallUpPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(139, 92, 246, 0.2)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, alignSelf: 'flex-start', marginBottom: 4 },
+  directCallUpText: { color: '#8B5CF6', fontWeight: '900', fontSize: 9 },
   recruitmentNoticeTitle: { color: '#FFF', fontWeight: '900', fontSize: 15 },
-  recruitmentNoticeOrg: { color: '#00F0FF', fontSize: 11, fontWeight: 'bold', marginTop: 2 },
-  recruitmentDetailBox: { backgroundColor: '#161F36', padding: 10, borderRadius: 12, gap: 4 },
+  recruitmentNoticeOrg: { color: '#C084FC', fontSize: 11, fontWeight: 'bold', marginTop: 2 },
+  recruitmentDetailBox: { backgroundColor: '#1E103C', padding: 10, borderRadius: 12, gap: 4 },
   recruitmentDetailLine: { color: '#CBD5E1', fontSize: 10 },
   recruitmentNoticeDesc: { color: '#94A3B8', fontSize: 10, lineHeight: 14 },
-  claimPassBtn: { backgroundColor: '#22C55E', paddingVertical: 10, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6, marginTop: 4 },
-  claimPassBtnText: { color: '#000', fontWeight: '900', fontSize: 12 },
+  claimPassBtn: { backgroundColor: '#8B5CF6', paddingVertical: 10, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6, marginTop: 4 },
+  claimPassBtnText: { color: '#FFF', fontWeight: '900', fontSize: 12 },
 
   qrCodeBox: { width: 170, height: 170, backgroundColor: '#FFF', borderRadius: 16, alignItems: 'center', justifyContent: 'center', padding: 10 },
   qrPassCodeText: { color: '#000', fontWeight: '900', fontSize: 10, marginTop: 2, letterSpacing: 1 },
-  passDetailsBox: { backgroundColor: '#161F36', padding: 12, borderRadius: 14, width: '100%', gap: 6 },
+  passDetailsBox: { backgroundColor: '#1E103C', padding: 12, borderRadius: 14, width: '100%', gap: 6 },
   passDetailLine: { fontSize: 11, color: '#FFF' },
 
   // Empty Recruitment State
   emptyRecruitCard: {
-    backgroundColor: '#0F172A',
+    backgroundColor: '#130924',
     borderRadius: 24,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: '#2E1854',
     marginTop: 10,
   },
   emptyRecruitIconCircle: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#161F36',
+    backgroundColor: '#1E103C',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -4221,9 +4221,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 65,
-    backgroundColor: '#070B14',
+    backgroundColor: '#090514',
     borderTopWidth: 1,
-    borderTopColor: '#1E293B',
+    borderTopColor: '#2E1854',
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
@@ -4231,31 +4231,31 @@ const styles = StyleSheet.create({
   },
   navTab: { alignItems: 'center', gap: 2 },
   navTabText: { color: '#64748B', fontSize: 8 },
-  navTabTextActive: { color: '#22C55E', fontWeight: 'bold' },
+  navTabTextActive: { color: '#8B5CF6', fontWeight: 'bold' },
   navCenterRecordBtn: { alignItems: 'center', top: -12 },
   navCenterGlowCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#070B14',
+    backgroundColor: '#090514',
     borderWidth: 2,
-    borderColor: '#22C55E',
+    borderColor: '#8B5CF6',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#22C55E',
+    shadowColor: '#8B5CF6',
     shadowOpacity: 0.5,
     shadowRadius: 8,
     elevation: 6,
   },
-  navCenterText: { color: '#22C55E', fontSize: 8, fontWeight: 'bold', marginTop: 2 },
+  navCenterText: { color: '#8B5CF6', fontSize: 8, fontWeight: 'bold', marginTop: 2 },
 
   // Modals
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 16 },
-  modalContainer: { width: '100%', maxWidth: 340, backgroundColor: '#0F172A', borderRadius: 22, padding: 16, borderWidth: 1, borderColor: '#1E293B' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#1E293B', paddingBottom: 8 },
+  modalContainer: { width: '100%', maxWidth: 340, backgroundColor: '#130924', borderRadius: 22, padding: 16, borderWidth: 1, borderColor: '#2E1854' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#2E1854', paddingBottom: 8 },
   modalTitle: { color: '#FFF', fontWeight: 'bold', fontSize: 13 },
-  langRow: { padding: 10, borderRadius: 12, backgroundColor: '#161F36', marginBottom: 6, flexDirection: 'row', justifyContent: 'space-between' },
-  langRowActive: { borderColor: '#22C55E', borderWidth: 1 },
+  langRow: { padding: 10, borderRadius: 12, backgroundColor: '#1E103C', marginBottom: 6, flexDirection: 'row', justifyContent: 'space-between' },
+  langRowActive: { borderColor: '#8B5CF6', borderWidth: 1 },
   langRowNative: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
   langRowEn: { color: '#94A3B8', fontSize: 10 },
 
@@ -4263,53 +4263,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#161F36',
+    backgroundColor: '#1E103C',
     padding: 10,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: '#2E1854',
   },
-  avatarChoiceRowActive: { borderColor: '#22C55E', backgroundColor: 'rgba(34,197,94,0.1)' },
+  avatarChoiceRowActive: { borderColor: '#8B5CF6', backgroundColor: 'rgba(139, 92, 246, 0.1)' },
   avatarChoiceSilhouette: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#130924',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#3B1E6D',
   },
   avatarChoiceImg: {
     width: 44,
     height: 44,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#3B1E6D',
   },
 
   cameraBox: {
     width: '100%',
     height: '96%',
-    backgroundColor: '#070B14',
+    backgroundColor: '#090514',
     borderRadius: 24,
     overflow: 'hidden',
     borderWidth: 1.5,
-    borderColor: '#00F0FF',
+    borderColor: '#C084FC',
   },
-  cameraBoxHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#1E293B' },
+  cameraBoxHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#2E1854' },
   cameraBoxTitle: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
   viewfinderArea: { flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center', width: '100%' },
-  viewfinderFrame: { width: '88%', height: '75%', borderWidth: 2, borderColor: 'rgba(0,240,255,0.7)', borderRadius: 24, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
+  viewfinderFrame: { width: '88%', height: '75%', borderWidth: 2, borderColor: 'rgba(192, 132, 252, 0.7)', borderRadius: 24, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
   skeletonPoseTarget: { alignItems: 'center', justifyContent: 'center' },
-  skeletonStatusText: { color: '#00F0FF', fontSize: 10, fontWeight: '900', marginTop: 4, letterSpacing: 0.5 },
+  skeletonStatusText: { color: '#C084FC', fontSize: 10, fontWeight: '900', marginTop: 4, letterSpacing: 0.5 },
   viewfinderGuide: { color: '#94A3B8', fontSize: 10, textAlign: 'center', marginTop: 12 },
   countdownBigOverlay: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', alignItems: 'center', justifyContent: 'center' },
   recDotRow: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   redRecDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' },
 
-  reportModalBox: { width: '100%', maxWidth: 340, backgroundColor: '#0F172A', borderRadius: 22, padding: 16, borderWidth: 1, borderColor: '#1E293B', gap: 10 },
-  reportScorePill: { backgroundColor: '#161F36', borderRadius: 14, padding: 10, alignItems: 'center' },
+  reportModalBox: { width: '100%', maxWidth: 340, backgroundColor: '#130924', borderRadius: 22, padding: 16, borderWidth: 1, borderColor: '#2E1854', gap: 10 },
+  reportScorePill: { backgroundColor: '#1E103C', borderRadius: 14, padding: 10, alignItems: 'center' },
   reportScoreNumber: { fontSize: 28, fontWeight: '900', color: '#FDE047', marginVertical: 2 },
-  reportVoiceCard: { backgroundColor: '#161F36', borderRadius: 12, padding: 10 },
+  reportVoiceCard: { backgroundColor: '#1E103C', borderRadius: 12, padding: 10 },
 });

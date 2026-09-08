@@ -4,16 +4,24 @@
     "slug": "sportlens",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
-      "backgroundColor": "#070B14"
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#090514"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.sportlens.app"
+      "bundleIdentifier": "com.sportlens.app",
+      "icon": "./assets/icon.png"
     },
     "android": {
       "package": "com.sportlens.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#090514"
+      },
       "permissions": [
         "CAMERA",
         "RECORD_AUDIO",
