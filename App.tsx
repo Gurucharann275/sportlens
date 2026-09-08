@@ -98,6 +98,100 @@ const validateAndSyncStreakIST = (athleteData: any) => {
 };
 
 // Preset Athlete Avatars for easy 1-tap photo selection
+
+// ================= 13 INDIAN LANGUAGES NATIVE VOICE & FEEDBACK ENGINE =================
+const NATIVE_WELCOMES: Record<LanguageCode, string> = {
+  te: 'భాష తెలుగులోకి మార్చబడింది',
+  hi: 'भाषा हिंदी चुनी गई है',
+  ta: 'மொழி தமிழ் தேர்ந்தெடுக்கப்பட்டது',
+  kn: 'ಭಾಷೆ ಕನ್ನಡ ಆಯ್ಕೆಯಾಗಿದೆ',
+  ml: 'ഭാഷ മലയാളം തിരഞ്ഞെടുത്തു',
+  mr: 'मराठी भाषा निवडली गेली आहे',
+  bn: 'ভাষা বাংলা নির্বাচিত হয়েছে',
+  gu: 'ગુજરાતી ભાષા પસંદ કરવામાં આવી છે',
+  pa: 'ਭਾਸ਼ਾ ਪੰਜਾਬੀ ਚੁਣੀ ਗਈ ਹੈ',
+  or: 'ଓଡ଼ିଆ ଭାଷା ଚୟନ କରାଗଲା',
+  as: 'অসমীয়া ভাষা বাছনি কৰা হ’ল',
+  ur: 'اردو زبان منتخب کی گئی ہے',
+  en: 'English language selected',
+};
+
+const getLocalizedShortRecording = (lang: LanguageCode): string => {
+  const map: Record<LanguageCode, string> = {
+    te: 'రికార్డింగ్ చాలా తక్కువగా ఉంది! దయచేసి కనీసం 3 సెకన్లు రికార్డ్ చేయండి.',
+    hi: 'रिकॉर्डिंग बहुत छोटी है! कृपया कम से कम 3 सेकंड का अभ्यास रिकॉर्ड करें।',
+    ta: 'பதிவு மிகவும் குறுகியது! குறைந்தது 3 வினாடிகள் பதிவு செய்யவும்.',
+    kn: 'ರೆಕಾರ್ಡಿಂಗ್ ತುಂಬಾ ಕಡಿಮೆಯಾಗಿದೆ! ದಯವಿಟ್ಟು ಕನಿಷ್ಠ 3 ಸೆಕೆಂಡುಗಳ ಕಾಲ ರೆಕಾರ್ಡ್ ಮಾಡಿ.',
+    ml: 'റെക്കോർഡിംഗ് വളരെ ചെറുതാണ്! കുറഞ്ഞത് 3 സെക്കൻഡ് റെക്കോർഡ് ചെയ്യുക.',
+    mr: 'रेकॉर्डिंग खूप लहान आहे! कृपया किमान 3 सेकंद व्यायाम रेकॉर्ड करा.',
+    bn: 'রেকর্ডিং খুব ছোট! অনুগ্রহ করে অন্তত ৩ সেকেন্ড রেকর্ড করুন।',
+    gu: 'રેકોર્ડિંગ ઘણું નાનું છે! કૃપા કરીને ઓછામાં ઓછી 3 સેકન્ડ રેકોર્ડ કરો.',
+    pa: 'ਰਿਕਾਰਡਿੰਗ ਬਹੁਤ ਛੋਟੀ ਹੈ! ਕਿਰਪਾ ਕਰਕੇ ਘੱਟੋ-ਘੱਟ 3 ਸਕਿੰਟ ਰਿਕਾਰਡ ਕਰੋ।',
+    or: 'ରେକର୍ଡିଂ ବହୁତ ଛୋଟ ଅଟେ! ଦୟାକରି ଅତି କମରେ ୩ ସେକେଣ୍ଡ ରେକର୍ଡ କରନ୍ତୁ।',
+    as: 'ৰেকৰ্ডিং অতি চুটি! অনুগ্ৰহ কৰি কমেও ৩ ছেকেণ্ড ৰেকৰ্ড কৰক।',
+    ur: 'ریکارڈنگ بہت مختصر ہے! برائے مہربانی کم از کم 3 سیکنڈ ریکارڈ کریں۔',
+    en: 'Recording too short! Please record at least 3 seconds of athletic movement.',
+  };
+  return map[lang] || map.en;
+};
+
+const getLocalizedJumpFeedback = (jumpCm: number, flightSec: number, peakWatts: number, lang: LanguageCode): string => {
+  const map: Record<LanguageCode, string> = {
+    te: `జంప్ ట్రయల్ పూర్తయింది (${jumpCm} cm • ${flightSec}s ఫ్లైట్)! పవర్: ${peakWatts}W. జంప్ & పవర్ స్కోర్ అప్‌డేట్ అయ్యాయి.`,
+    hi: `जंप ट्रायल पूरा हुआ (${jumpCm} cm • ${flightSec}s फ्लाइट)! पावर: ${peakWatts}W. जंप और पावर स्कोर अपडेट हुआ।`,
+    ta: `குதித்தல் பதிவு முடிந்தது (${jumpCm} cm • ${flightSec}s பறக்கும் நேரம்)! சக்தி: ${peakWatts}W. மதிப்பெண்கள் புதுப்பிக்கப்பட்டன.`,
+    kn: `ವರ್ಟಿಕಲ್ ಜಂಪ್ ಪೂರ್ಣಗೊಂಡಿದೆ (${jumpCm} cm • ${flightSec}s ಹಾರಾಟ)! ಪವರ್: ${peakWatts}W. ಸ್ಕೋರ್ ನವೀಕರಿಸಲಾಗಿದೆ.`,
+    ml: `ജമ്പ് ട്രയൽ പൂർത്തിയായി (${jumpCm} cm • ${flightSec}s എയർടൈം)! പവർ: ${peakWatts}W. സ്കോർ അപ്ഡേറ്റ് ചെയ്തു.`,
+    mr: `जंप चाचणी पूर्ण झाली (${jumpCm} cm • ${flightSec}s फ्लाइट)! पॉवर: ${peakWatts}W. स्कोअर अपडेट झाला.`,
+    bn: `লাফ ট্রায়াল সম্পন্ন হয়েছে (${jumpCm} সেমি • ${flightSec} সেকেন্ড ফ্লাইট)! পাওয়ার: ${peakWatts}W. স্কোর আপডেট হয়েছে।`,
+    gu: `જમ્પ ટ્રાયલ પૂર્ણ થઈ (${jumpCm} cm • ${flightSec}s ફ્લાઇટ)! પાવર: ${peakWatts}W. સ્કોર અપડેટ થયો.`,
+    pa: `ਜੰਪ ਟ੍ਰਾਇਲ ਮੁਕੰਮਲ ਹੋਇਆ (${jumpCm} cm • ${flightSec}s ਉਡਾਣ)! ਪਾਵਰ: ${peakWatts}W. ਸਕੋਰ ਅੱਪਡੇਟ ਹੋਇਆ।`,
+    or: `ଜମ୍ପ ପରୀକ୍ଷା ସମ୍ପନ୍ନ ହେଲା (${jumpCm} cm • ${flightSec}s ଉଡ଼ାଣ)! ପାୱାର: ${peakWatts}W. ସ୍କୋର ଅପଡେଟ୍ ହେଲା।`,
+    as: `জাম্প ট্ৰায়েল সম্পূৰ্ণ হ’ল (${jumpCm} cm • ${flightSec}s বিমান সময়)! পাৱাৰ: ${peakWatts}W. স্কোৰ আপডেট কৰা হ’ল।`,
+    ur: `جمپ ٹرائل مکمل ہوا (${jumpCm} cm • ${flightSec}s اڑان)! پاور: ${peakWatts}W. اسکور اپ ڈیٹ ہوا۔`,
+    en: `Verified physical jump at ${jumpCm} cm (${flightSec}s flight airtime)! Generated ${peakWatts} Watts peak power.`,
+  };
+  return map[lang] || map.en;
+};
+
+const getLocalizedSprintFeedback = (speedMps: number, splitSec: number, lang: LanguageCode): string => {
+  const map: Record<LanguageCode, string> = {
+    te: `స్ప్రింట్ ట్రయల్ పూర్తయింది (${speedMps} m/s • ${splitSec}s 30మీ)! స్పీడ్ & ఎజిలిటీ అప్‌డేట్ అయ్యాయి.`,
+    hi: `स्प्रिंट ट्रायल पूरा हुआ (${speedMps} m/s • ${splitSec}s 30m)! स्पीड और एजिलिटी अपडेट हुए।`,
+    ta: `ஸ்பிரிண்ட் சோதனை முடிந்தது (${speedMps} m/s • ${splitSec}s 30m)! வேகம் மற்றும் சுறுசுறுப்பு புதுப்பிக்கப்பட்டது.`,
+    kn: `ಸ್ಪ್ರಿಂಟ್ ಟ್ರಯಲ್ ಪೂರ್ಣಗೊಂಡಿದೆ (${speedMps} m/s • ${splitSec}s 30m)! ವೇಗ ಮತ್ತು ಚುರುಕುತನ ನವೀಕರಿಸಲಾಗಿದೆ.`,
+    ml: `സ്പ്രിന്റ് ട്രയൽ പൂർത്തിയായി (${speedMps} m/s • ${splitSec}s 30m)! വേഗതയും ചടുലതയും അപ്ഡേറ്റ് ചെയ്തു.`,
+    mr: `स्प्रिंट चाचणी पूर्ण झाली (${speedMps} m/s • ${splitSec}s 30m)! गती आणि चपळता अपडेट झाली.`,
+    bn: `স্প্রিন্ট ট্রায়াল সম্পন্ন হয়েছে (${speedMps} m/s • ${splitSec}s 30m)! গতি ও চপলতা আপডেট হয়েছে।`,
+    gu: `સ્પ્રિન્ટ ટ્રાયલ પૂર્ણ થઈ (${speedMps} m/s • ${splitSec}s 30m)! સ્પીડ અને ચપળતા અપડેટ થઈ.`,
+    pa: `ਸਪ੍ਰਿੰਟ ਟ੍ਰਾਇਲ ਮੁਕੰਮਲ ਹੋਇਆ (${speedMps} m/s • ${splitSec}s 30m)! ਰਫ਼ਤਾਰ ਅਤੇ ਚੁਸਤੀ ਅੱਪਡੇਟ ਹੋਈ।`,
+    or: `ସ୍ପ୍ରିଣ୍ଟ ପରୀକ୍ଷା ସମ୍ପନ୍ନ ହେଲା (${speedMps} m/s • ${splitSec}s 30m)! ଗତି ଏବଂ ଚପଳତା ଅପଡେଟ୍ ହେଲା।`,
+    as: `স্প্ৰিণ্ট ট্ৰায়েল সম্পূৰ্ণ হ’ল (${speedMps} m/s • ${splitSec}s 30m)! গতি আৰু ক্ষিপ্ৰতা আপডেট কৰা হ’ল।`,
+    ur: `سپرنٹ ٹرائل مکمل ہوا (${speedMps} m/s • ${splitSec}s 30m)! رفتار اور چستی اپ ڈیٹ ہوئی۔`,
+    en: `Paced at ${speedMps} m/s (${splitSec}s 30m split)! Updated Speed, Agility & Stamina.`,
+  };
+  return map[lang] || map.en;
+};
+
+const getLocalizedSquatFeedback = (flexionDeg: number, valgusDeg: number, lang: LanguageCode): string => {
+  const map: Record<LanguageCode, string> = {
+    te: `స్క్వాట్ ఫామ్ నమోదు అయింది (${flexionDeg}° ఫ్లెక్సియన్ • ${valgusDeg}° వాల్గస్)! టెక్నిక్ స్కోర్ అప్‌డేట్ అయ్యింది.`,
+    hi: `स्क्वाट फॉर्म दर्ज हुआ (${flexionDeg}° फ्लेक्सन • ${valgusDeg}° वाल्गस)! तकनीक स्कोर अपडेट हुआ।`,
+    ta: `ஸ்குவாட் பதிவு முடிந்தது (${flexionDeg}° முழங்கால் வளைவு)! நுட்ப ஸ்கோர் புதுப்பிக்கப்பட்டது.`,
+    kn: `ಸ್ಕ್ವಾಟ್ ಫಾರ್ಮ್ ಪೂರ್ಣಗೊಂಡಿದೆ (${flexionDeg}° ಬಾಗುವಿಕೆ)! ತಂತ್ರಜ್ಞಾನ ಸ್ಕೋರ್ ನವೀಕರಿಸಲಾಗಿದೆ.`,
+    ml: `സ്ക്വാറ്റ് ഫോം പൂർത്തിയായി (${flexionDeg}° കാൽമുട്ട് വളവ്)! ടെക്നിക് സ്കോർ അപ്ഡേറ്റ് ചെയ്തു.`,
+    mr: `स्क्वॉट फॉर्म नोंदवला गेला (${flexionDeg}° गुडघ्याची लवचिकता)! तंत्रज्ञान स्कोअर अपडेट झाला.`,
+    bn: `স্কোয়াট ফর্ম রেকর্ড হয়েছে (${flexionDeg}° ফ্লেক্সন)! টেকনিক স্কোর আপডেট হয়েছে।`,
+    gu: `સ્ક્વોટ ફોર્મ રેકોર્ડ થયું (${flexionDeg}° ફ્લેક્સન)! ટેકનિક સ્કોર અપડેટ થયો.`,
+    pa: `ਸਕੁਐਟ ਫ਼ਾਰਮ ਦਰਜ ਹੋਇਆ (${flexionDeg}° ਮੋੜ)! ਤਕਨੀਕ ਸਕੋਰ ਅੱਪਡੇਟ ਹੋਇਆ।`,
+    or: `ସ୍କ୍ୱାଟ୍ ଫର୍ମ ରେକର୍ଡ ହେଲା (${flexionDeg}° ଆଣ୍ଠୁ ବଙ୍କା)! କୌଶଳ ସ୍କୋର ଅପଡେଟ୍ ହେଲା।`,
+    as: `স্কোৱাট ফৰ্ম ৰেকৰ্ড হ’ল (${flexionDeg}° আঁঠুৰ ভাঁজ)! কৌশল স্কোৰ আপডেট কৰা হ’ল।`,
+    ur: `سکواٹ فارم ریکارڈ ہوا (${flexionDeg}° جھکاؤ)! تکنیک سکور اپ ڈیٹ ہوا۔`,
+    en: `Joint flexion recorded at ${flexionDeg}° (${valgusDeg}° valgus deviation)! Updated Technique & Power.`,
+  };
+  return map[lang] || map.en;
+};
+
 const AVATAR_PRESETS = [
   { id: '1', title: 'Volleyball / Athlete', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80' },
   { id: '2', title: 'Football / Striker', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80' },
@@ -918,11 +1012,7 @@ export default function App() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       } catch (e) {}
 
-      const shortVoice = language === 'te'
-        ? 'రికార్డింగ్ చాలా తక్కువగా ఉంది! దయచేసి కనీసం 3 సెకన్లు రికార్డ్ చేయండి.'
-        : language === 'hi'
-        ? 'रिकॉर्डिंग बहुत छोटी है! कृपया कम से कम 3 सेकंड का अभ्यास रिकॉर्ड करें।'
-        : 'Recording too short! Please record at least 3 seconds of athletic movement.';
+      const shortVoice = getLocalizedShortRecording(language);
 
       speakFeedback(shortVoice);
 
@@ -977,11 +1067,7 @@ export default function App() {
 
         score = jumpRes.score;
         calibratedList = ['JUMP', 'POWER'];
-        feedback = language === 'te'
-          ? `జంప్ ట్రయల్ పూర్తయింది (${jumpRes.jumpHeightCm} cm • ${jumpRes.flightTimeSec}s ఫ్లైట్)! పవర్: ${jumpRes.peakPowerWatts}W. జంప్ & పవర్ స్కోర్ అప్‌డేట్ అయ్యాయి.`
-          : language === 'hi'
-          ? `जंप ट्रायल पूरा हुआ (${jumpRes.jumpHeightCm} cm • ${jumpRes.flightTimeSec}s फ्लाइट)! पावर: ${jumpRes.peakPowerWatts}W. जंप और पावर स्कोर अपडेट हुआ।`
-          : `Verified physical jump at ${jumpRes.jumpHeightCm} cm (${jumpRes.flightTimeSec}s flight airtime)! Generated ${jumpRes.peakPowerWatts} Watts (${jumpRes.relativePowerWattsPerKg} W/kg) peak power.`;
+        feedback = getLocalizedJumpFeedback(jumpRes.jumpHeightCm, jumpRes.flightTimeSec, jumpRes.peakPowerWatts, language);
       } else if (activeDrillCategory === 'sprint') {
         const sprintRes = analyzeVideoSprintKinematics(recordDurationSec, athleteWeight);
         bioResult = sprintRes;
@@ -1003,11 +1089,7 @@ export default function App() {
 
         score = sprintRes.score;
         calibratedList = ['SPEED', 'AGILITY', 'STAMINA'];
-        feedback = language === 'te'
-          ? `స్ప్రింట్ ట్రయల్ పూర్తయింది (${sprintRes.topSpeedMps} m/s)! స్పీడ్ & ఎజిలిటీ అప్‌డేట్ అయ్యాయి.`
-          : language === 'hi'
-          ? `स्प्रिंट ट्रायल पूरा हुआ (${sprintRes.topSpeedMps} m/s)! स्पीड और एजिलिटी अपडेट हुए।`
-          : `Paced at ${sprintRes.topSpeedMps} m/s (${sprintRes.split30mSec}s 30m split)! Updated Speed, Agility & Stamina.`;
+        feedback = getLocalizedSprintFeedback(sprintRes.topSpeedMps, sprintRes.split30mSec, language);
       } else {
         const squatRes = analyzeVideoSquatKinematics(recordDurationSec, athleteWeight);
         bioResult = squatRes;
@@ -1026,11 +1108,7 @@ export default function App() {
 
         score = squatRes.score;
         calibratedList = ['TECHNIQUE', 'POWER'];
-        feedback = language === 'te'
-          ? `స్క్వాట్ ఫామ్ నమోదు అయింది (${squatRes.kneeFlexionDeg}°)! టెక్నిక్ స్కోర్ అప్‌డేట్ అయ్యింది.`
-          : language === 'hi'
-          ? `स्क्वाट फॉर्म दर्ज हुआ (${squatRes.kneeFlexionDeg}°)! तकनीक स्कोर अपडेट हुआ।`
-          : `Joint flexion recorded at ${squatRes.kneeFlexionDeg}° (${squatRes.valgusStabilityDeg}° valgus deviation)! Updated Technique & Power.`;
+        feedback = getLocalizedSquatFeedback(squatRes.kneeFlexionDeg, squatRes.valgusStabilityDeg, language);
       }
 
       setLatestBiomechanicsResult(bioResult);
@@ -1682,7 +1760,7 @@ export default function App() {
                     onPress={() => {
                       setLanguage(l.code);
                       setIsLangModalOpen(false);
-                      speakFeedback(l.code === 'te' ? 'భాష తెలుగులోకి మార్చబడింది' : `${l.name} selected`);
+                      speakFeedback(NATIVE_WELCOMES[l.code] || `${l.name} selected`, l.speechCode);
                     }}
                   >
                     <Text style={styles.langRowNative}>{l.native}</Text>
