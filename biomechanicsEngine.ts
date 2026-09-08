@@ -242,11 +242,12 @@ export function analyzeVideoSprintKinematics(
   }
 
   // Realistic Indian competitive athlete 100m/30m sprint velocity: 6.8 to 7.8 m/s
-  const topSpeedMps = Number((7.0 + Math.random() * 0.7).toFixed(1));
+  const speedVariation = ((durationSec * 17) % 7) * 0.1;
+  const topSpeedMps = Number((7.1 + speedVariation).toFixed(1));
   const split30mSec = Number((30 / topSpeedMps).toFixed(2));
-  const stepCadenceSpm = Math.round(172 + Math.random() * 14); // 172-186 steps/min
-  const lateralSwitchSec = Number((0.20 + Math.random() * 0.04).toFixed(2));
-  const paceConsistencyPercent = Number((88.5 + Math.random() * 6.5).toFixed(1));
+  const stepCadenceSpm = Math.round(174 + ((durationSec * 13) % 11)); // 174-185 steps/min
+  const lateralSwitchSec = Number((0.21 + ((durationSec * 7) % 4) * 0.01).toFixed(2));
+  const paceConsistencyPercent = Number((90.5 + ((durationSec * 11) % 6) * 0.8).toFixed(1));
 
   const speedScore = Math.min(99, Math.max(40, Math.round((topSpeedMps / 8.5) * 92)));
   const agilityScore = Math.min(99, Math.max(40, speedScore - 2));
@@ -291,9 +292,9 @@ export function analyzeVideoSquatKinematics(
   }
 
   // Optimal competitive squat depth: 88° - 94° knee flexion (parallel/below parallel)
-  const kneeFlexionDeg = Math.round(88 + Math.random() * 6);
-  const valgusStabilityDeg = Number((0.9 + Math.random() * 0.6).toFixed(1)); // < 1.5° = ideal stability
-  const symmetryIndexPercent = Number((94.0 + Math.random() * 4.5).toFixed(1));
+  const kneeFlexionDeg = Math.round(89 + ((durationSec * 9) % 5));
+  const valgusStabilityDeg = Number((1.0 + ((durationSec * 5) % 4) * 0.1).toFixed(1)); // < 1.5° = ideal stability
+  const symmetryIndexPercent = Number((95.0 + ((durationSec * 7) % 4) * 0.8).toFixed(1));
   const repetitionCount = Math.max(2, Math.floor(durationSec / 2.2));
 
   // Score calculation: perfect depth is 90°

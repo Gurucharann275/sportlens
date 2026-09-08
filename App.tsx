@@ -446,7 +446,7 @@ export default function App() {
 
       const scoutName = customMatch ? customMatch.name : 'Charan (Chief Scout & Admin)';
       const scoutOrg = customMatch ? customMatch.org : 'SAI National Talent Commission & SAAP';
-      const cryptoKey = `SHA256-SAI-${cleanId}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const cryptoKey = `SHA256-SAI-${cleanId}-${(Date.now() % 8999) + 1000}`;
 
       setActiveScoutProfile({
         name: scoutName,
@@ -531,7 +531,7 @@ export default function App() {
         await AsyncStorage.setItem('scoutpulse_registered_scouts', JSON.stringify(list));
       } catch (e) {}
 
-      const cryptoKey = `SHA256-SAI-${cleanId}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const cryptoKey = `SHA256-SAI-${cleanId}-${(Date.now() % 8999) + 1000}`;
       const tierBadge = recruiterTier === 'govt'
         ? 'SAI CENTRAL VERIFIED (GRADE A+)'
         : recruiterTier === 'academy'
@@ -1212,8 +1212,8 @@ export default function App() {
 
   // Handle Scout Issuing Direct Call-Up
   const handleDispatchCallUp = (targetAthlete: any) => {
-    const passCode = `SAI-AP-${Math.floor(100000 + Math.random() * 900000)}`;
-    const cryptoHash = `SHA256-${Date.now().toString(16).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const passCode = `SAI-AP-${(Date.now() % 899999) + 100000}`;
+    const cryptoHash = `SHA256-${Date.now().toString(16).toUpperCase()}-${(Date.now() % 8999) + 1000}`;
 
     const newNotice = {
       id: `trial_${Date.now()}`,
