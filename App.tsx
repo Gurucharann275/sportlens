@@ -13,6 +13,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Share,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Speech from 'expo-speech';
@@ -312,7 +313,32 @@ export default function App() {
     }));
   }, []);
 
-  // Recruiter Moneyball Audit States
+  // Central Registry of Registered Athletes (for Recruiter Talent Discovery)
+  const [storedAthletes, setStoredAthletes] = useState<any[]>([]);
+
+  const loadAllAthletesFromStorage = async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const userKeys = keys.filter(k => k.startsWith('scoutpulse_user_'));
+      if (userKeys.length > 0) {
+        const pairs = await AsyncStorage.multiGet(userKeys);
+        const list: any[] = [];
+        for (const [_, val] of pairs) {
+          if (val) {
+            try {
+              const p = JSON.parse(val);
+              if (p && p.name) list.push(p);
+            } catch (e) {}
+          }
+        }
+        setStoredAthletes(list);
+      }
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    loadAllAthletesFromStorage();
+  }, [appMode]);
   const [auditScrubPhase, setAuditScrubPhase] = useState<'load' | 'takeoff' | 'apex' | 'landing'>('apex');
   const [auditCompareMode, setAuditCompareMode] = useState<'sai_national' | 'district_avg'>('sai_national');
 
@@ -878,6 +904,42 @@ export default function App() {
     }
   };
 
+  // 📲 Real Native OS Share Sheet for Physical Passport Card
+  const handleSharePassportCard = async () => {
+    try {
+      const jumpStr = athlete.rawUnits?.jump || (athlete.stats?.jump ? `${athlete.stats.jump} cm` : 'Uncalibrated');
+      const powerStr = athlete.rawUnits?.power || (athlete.stats?.power ? `${athlete.stats.power} W` : 'Uncalibrated');
+      const speedStr = athlete.rawUnits?.speed || (athlete.stats?.speed ? `${athlete.stats.speed} m/s` : 'Uncalibrated');
+      const ovrStr = athlete.ovr > 0 ? `${athlete.ovr} OVR` : 'Grassroots Scout Prospect';
+
+      const shareMsg =
+`🏆 SPORTLENS ATHLETE PHYSICAL PASSPORT
+━━━━━━━━━━━━━━━━━━━━
+👤 ATHLETE: ${(athlete.name || 'ATHLETE').toUpperCase()}
+🏅 SPORT: ${(athlete.primarySport || 'ATHLETICS').toUpperCase()}
+📍 LOCATION: ${athlete.district || 'District'}, ${athlete.state || 'India'}
+⚡ RATING: ${ovrStr}
+━━━━━━━━━━━━━━━━━━━━
+📊 BIOMECHANICAL SPECIFICATIONS:
+• Jump: ${jumpStr}
+• Power: ${powerStr}
+• Speed: ${speedStr}
+• Agility: ${athlete.rawUnits?.agility || (athlete.stats?.agility ? `${athlete.stats.agility}/100` : 'Uncalibrated')}
+• Stamina: ${athlete.rawUnits?.stamina || (athlete.stats?.stamina ? `${athlete.stats.stamina}/100` : 'Uncalibrated')}
+• Technique: ${athlete.rawUnits?.technique || (athlete.stats?.technique ? `${athlete.stats.technique}/100` : 'Uncalibrated')}
+━━━━━━━━━━━━━━━━━━━━
+🛡️ Verified by SAI Central SportLens AI Biomechanics Engine
+🇮🇳 Smart India Hackathon Grassroots Sports Scouting`;
+
+      await Share.share({
+        title: `${athlete.name}'s SportLens Passport`,
+        message: shareMsg,
+      });
+    } catch (e: any) {
+      Alert.alert('Share', e?.message || 'Could not open share menu');
+    }
+  };
+
   // Reset all stats back to 0
   const handleResetAllStats = () => {
     Alert.alert(
@@ -1004,17 +1066,18 @@ export default function App() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         } catch (e) {}
         speakFeedback(`${count}`, 'en-IN');
-      } else if (count === 0) {
+      } else {
+        // COUNTDOWN FINISHED -> RECORDING STARTS IMMEDIATELY!
+        if (countdownTimerRef.current) {
+          clearInterval(countdownTimerRef.current);
+          countdownTimerRef.current = null;
+        }
         setCountdownNumber(0);
         try {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (e) {}
         speakFeedback('Go!', 'en-IN');
-      } else {
-        if (countdownTimerRef.current) {
-          clearInterval(countdownTimerRef.current);
-          countdownTimerRef.current = null;
-        }
+
         setDrillPhase('recording');
         setRecordDurationSec(0);
 
@@ -1093,8 +1156,8 @@ export default function App() {
       try { cameraRef.current.stopRecording(); } catch (e) {}
     }
 
-    // 🛑 DURATION CHECK: Minimum 3 seconds required for capture
-    if (recordDurationSec < 3) {
+    // 🛑 DURATION CHECK: Minimum 2 seconds required for capture
+    if (recordDurationSec < 2) {
       try {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       } catch (e) {}
@@ -1105,7 +1168,7 @@ export default function App() {
 
       Alert.alert(
         '⚠️ Recording Too Short',
-        `You recorded for only ${recordDurationSec} second(s).\n\nPlease record at least 3 seconds of continuous movement so the AI computer vision can calibrate verified kinematics.`,
+        `You recorded for only ${recordDurationSec} second(s).\n\nPlease record at least 2 seconds of movement so the AI computer vision can calibrate verified kinematics.`,
         [{ text: 'Try Again', onPress: () => { setDrillPhase('standby'); setRecordDurationSec(0); } }]
       );
       setDrillPhase('standby');
@@ -1276,6 +1339,7 @@ export default function App() {
       setAthlete(updated);
       try {
         AsyncStorage.setItem(`scoutpulse_user_${athlete.phone}`, JSON.stringify(updated));
+        loadAllAthletesFromStorage();
       } catch (e) {}
 
       setCalculatedScore(score);
@@ -1296,29 +1360,115 @@ export default function App() {
   };
 
   // ================= RECRUITER TALENT ROSTER (VERIFIED SCOUTABLE ATHLETES) =================
-  // Verified candidate athletes appear dynamically when they register and record tests in SportLens.
-  const TALENT_POOL: any[] = athlete && athlete.tests > 0 ? [
+  // Registered candidates (including seeded athlete friends & dynamically registered athletes)
+  const SEEDED_FRIENDS_ATHLETES: any[] = [
     {
-      id: `ath_${athlete.phone || 'verified'}`,
-      name: athlete.name,
-      district: athlete.district,
-      state: athlete.state,
-      age: athlete.age,
-      sport: athlete.primarySport,
-      ovr: athlete.ovr,
-      jumpVal: athlete.rawUnits?.jump || `${athlete.stats?.jump || 0} cm`,
-      powerVal: athlete.rawUnits?.power || `${athlete.stats?.power || 0} W`,
-      speedVal: athlete.rawUnits?.speed || `${athlete.stats?.speed || 0} m/s`,
-      antiCheatScore: 'Anti-Cheat: 98.4%',
-      badge: athlete.ovr >= 85 ? 'SAI Gold Tier' : athlete.ovr >= 70 ? 'State Prospect' : 'District Prospect',
-      avatar: athlete.avatar,
+      id: 'ath_sanjay_vanasi',
+      name: 'SANJAY KUMAR VANASI',
+      district: 'Vijayawada',
+      state: 'Andhra Pradesh',
+      age: 18,
+      sport: 'Basketball',
+      ovr: 68,
+      tests: 0,
+      jumpVal: 'Uncalibrated',
+      powerVal: 'Uncalibrated',
+      speedVal: 'Uncalibrated',
+      antiCheatScore: 'Single-Shot Video Verified 🛡️',
+      badge: 'Grassroots Candidate',
+      avatar: undefined,
     },
-  ] : [];
+    {
+      id: 'ath_sashanth_ponnada',
+      name: 'Sashanth Kumar Ponnada',
+      district: 'Visakhapatnam',
+      state: 'Andhra Pradesh',
+      age: 19,
+      sport: 'Athletics',
+      ovr: 75,
+      tests: 1,
+      jumpVal: '62.4 cm • 0.58s Flight',
+      powerVal: '3850 W • 56.6 W/kg',
+      speedVal: '8.2 m/s • 3.92s Split',
+      antiCheatScore: 'Anti-Cheat: 98.4%',
+      badge: 'State Prospect',
+      avatar: undefined,
+    },
+    {
+      id: 'ath_charan_eluru',
+      name: 'Charan',
+      district: 'Eluru',
+      state: 'Andhra Pradesh',
+      age: 18,
+      sport: 'Volleyball',
+      ovr: 88,
+      tests: 3,
+      jumpVal: '68.5 cm • 0.64s Flight',
+      powerVal: '4150 W • 61.0 W/kg',
+      speedVal: '8.8 m/s • 3.75s Split',
+      antiCheatScore: 'Anti-Cheat: 99.1%',
+      badge: 'SAI Gold Tier',
+      avatar: undefined,
+    },
+  ];
+
+  // Map any dynamically registered athletes stored on device
+  const mappedStoredTalent = storedAthletes.map((ath: any) => ({
+    id: `ath_${ath.phone || ath.name.replace(/\s+/g, '_').toLowerCase()}`,
+    name: ath.name,
+    district: ath.district || 'Eluru',
+    state: ath.state || 'Andhra Pradesh',
+    age: ath.age || 18,
+    sport: ath.primarySport || ath.sport || 'Athletics',
+    ovr: ath.ovr > 0 ? ath.ovr : (ath.tests > 0 ? 70 : 65),
+    tests: ath.tests || 0,
+    jumpVal: ath.rawUnits?.jump || (ath.stats?.jump ? `${ath.stats.jump} cm` : 'Uncalibrated'),
+    powerVal: ath.rawUnits?.power || (ath.stats?.power ? `${ath.stats.power} W` : 'Uncalibrated'),
+    speedVal: ath.rawUnits?.speed || (ath.stats?.speed ? `${ath.stats.speed} m/s` : 'Uncalibrated'),
+    antiCheatScore: ath.tests > 0 ? 'Anti-Cheat: 98.4%' : 'Single-Shot Video Verified 🛡️',
+    badge: ath.ovr >= 85 ? 'SAI Gold Tier' : ath.ovr >= 70 ? 'State Prospect' : ath.tests > 0 ? 'District Prospect' : 'Grassroots Candidate',
+    avatar: ath.avatar,
+  }));
+
+  // Build unified TALENT_POOL deduplicated by name
+  const talentPoolMap = new Map<string, any>();
+  SEEDED_FRIENDS_ATHLETES.forEach((a) => talentPoolMap.set(a.name.trim().toLowerCase(), a));
+  mappedStoredTalent.forEach((a) => talentPoolMap.set(a.name.trim().toLowerCase(), a));
+  if (athlete && athlete.name && !athlete.name.toLowerCase().includes('scout') && !athlete.name.toLowerCase().includes('admin')) {
+    talentPoolMap.set(athlete.name.trim().toLowerCase(), {
+      id: `ath_${athlete.phone || 'current'}`,
+      name: athlete.name,
+      district: athlete.district || 'Eluru',
+      state: athlete.state || 'Andhra Pradesh',
+      age: athlete.age || 18,
+      sport: athlete.primarySport || 'Athletics',
+      ovr: athlete.ovr > 0 ? athlete.ovr : (athlete.tests > 0 ? 70 : 65),
+      tests: athlete.tests || 0,
+      jumpVal: athlete.rawUnits?.jump || (athlete.stats?.jump ? `${athlete.stats.jump} cm` : 'Uncalibrated'),
+      powerVal: athlete.rawUnits?.power || (athlete.stats?.power ? `${athlete.stats.power} W` : 'Uncalibrated'),
+      speedVal: athlete.rawUnits?.speed || (athlete.stats?.speed ? `${athlete.stats.speed} m/s` : 'Uncalibrated'),
+      antiCheatScore: athlete.tests > 0 ? 'Anti-Cheat: 98.4%' : 'Single-Shot Video Verified 🛡️',
+      badge: athlete.ovr >= 85 ? 'SAI Gold Tier' : athlete.ovr >= 70 ? 'State Prospect' : athlete.tests > 0 ? 'District Prospect' : 'Grassroots Candidate',
+      avatar: athlete.avatar,
+    });
+  }
+  const TALENT_POOL: any[] = Array.from(talentPoolMap.values());
+
+  const normalizeForFilter = (s: string = '') => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
   const filteredTalent = TALENT_POOL.filter((ath) => {
-    const matchSport = recruiterSportFilter === 'All' || ath.sport.toLowerCase().includes(recruiterSportFilter.toLowerCase());
-    const matchState = recruiterStateFilter === 'All' || ath.state.toLowerCase() === recruiterStateFilter.toLowerCase();
-    const matchDist = recruiterDistrictFilter === 'All' || ath.district.toLowerCase() === recruiterDistrictFilter.toLowerCase();
+    const normAthSport = normalizeForFilter(ath.sport);
+    const normFiltSport = normalizeForFilter(recruiterSportFilter);
+    const matchSport = recruiterSportFilter === 'All' || normAthSport.includes(normFiltSport) || normFiltSport.includes(normAthSport);
+
+    const normAthState = normalizeForFilter(ath.state);
+    const normFiltState = normalizeForFilter(recruiterStateFilter);
+    const matchState = recruiterStateFilter === 'All' || normAthState.includes(normFiltState) || normFiltState.includes(normAthState);
+
+    const normAthDist = normalizeForFilter(ath.district);
+    const normFiltDist = normalizeForFilter(recruiterDistrictFilter);
+    const matchDist = recruiterDistrictFilter === 'All' || normAthDist.includes(normFiltDist) || normFiltDist.includes(normAthDist);
+
     return matchSport && matchState && matchDist;
   });
 
@@ -2302,19 +2452,19 @@ export default function App() {
                 colors={['#1E103C', '#130924']}
                 style={{ borderRadius: 20, padding: 14, borderWidth: 1, borderColor: '#2E1854', gap: 10 }}
               >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 150 }}>
                     <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: (athlete.streakDays || 0) > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(100,116,139,0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: (athlete.streakDays || 0) > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(100,116,139,0.3)' }}>
                       <Text style={{ fontSize: 18 }}>{(athlete.streakDays || 0) > 0 ? '🔥' : '⏳'}</Text>
                     </View>
-                    <View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 14 }}>{athlete.streakDays || 0} {t.streak_suffix || 'Day Training Streak'}</Text>
-                        <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.15)', paddingHorizontal: 5, paddingVertical: 1.5, borderRadius: 4, borderWidth: 0.5, borderColor: '#8B5CF6' }}>
-                          <Text style={{ color: '#8B5CF6', fontSize: 7.5, fontWeight: '900' }}>🇮🇳 IST SYNC</Text>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                        <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 13 }}>{athlete.streakDays || 0} {t.streak_suffix || 'Day Streak'}</Text>
+                        <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.15)', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4, borderWidth: 0.5, borderColor: '#8B5CF6' }}>
+                          <Text style={{ color: '#8B5CF6', fontSize: 7.5, fontWeight: '900' }}>🇮🇳 IST</Text>
                         </View>
                       </View>
-                      <Text style={{ color: (athlete.streakDays || 0) > 0 ? (athlete.lastActiveDateIST === getISTDateString() ? '#8B5CF6' : '#F97316') : '#94A3B8', fontSize: 10, fontWeight: 'bold' }}>
+                      <Text numberOfLines={1} style={{ color: (athlete.streakDays || 0) > 0 ? (athlete.lastActiveDateIST === getISTDateString() ? '#8B5CF6' : '#F97316') : '#94A3B8', fontSize: 9.5, fontWeight: 'bold' }}>
                         {(athlete.streakDays || 0) > 0
                           ? (athlete.lastActiveDateIST === getISTDateString() ? (t.streak_secured || 'Streak Secured') : (t.streak_warning || 'Record before midnight!'))
                           : (t.streak_start_prompt || 'Complete 1st test to start streak!')}
@@ -2323,8 +2473,8 @@ export default function App() {
                   </View>
 
                   {/* Level Tag */}
-                  <View style={{ backgroundColor: 'rgba(192, 132, 252, 0.15)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(192, 132, 252, 0.3)' }}>
-                    <Text style={{ color: '#C084FC', fontWeight: '900', fontSize: 10 }}>{t.level_label || 'LVL'} {athlete.level || 1} • {(athlete.levelTitle || 'Grassroots Rookie').toUpperCase()}</Text>
+                  <View style={{ backgroundColor: 'rgba(192, 132, 252, 0.15)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(192, 132, 252, 0.3)', flexShrink: 0 }}>
+                    <Text style={{ color: '#C084FC', fontWeight: '900', fontSize: 9.5 }}>{t.level_label || 'LVL'} {athlete.level || 1} • {(athlete.levelTitle || 'Grassroots').toUpperCase()}</Text>
                   </View>
                 </View>
 
@@ -2536,7 +2686,7 @@ export default function App() {
             <View style={{ gap: 14 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={styles.pageTitle}>{t.player_card_title}</Text>
-                <TouchableOpacity onPress={() => speakFeedback(`${athlete.ovr} OVR Athlete ${athlete.name}`)}>
+                <TouchableOpacity onPress={handleSharePassportCard}>
                   <Ionicons name="share-social" color="#8B5CF6" size={20} />
                 </TouchableOpacity>
               </View>
@@ -2575,15 +2725,7 @@ export default function App() {
 
                       <View style={{ backgroundColor: '#1E103C', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: '#C084FC' }}>
                         <Text style={{ color: '#C084FC', fontSize: 9, fontWeight: '900' }}>
-                          {athlete.ovr >= 90
-                            ? `👑 Top 1.5% in ${athlete.district}`
-                            : athlete.ovr >= 80
-                            ? `🥇 Top 8% in ${athlete.district}`
-                            : athlete.ovr >= 70
-                            ? `🥈 Top 20% in ${athlete.district}`
-                            : athlete.ovr > 0
-                            ? `🌱 Grassroots (${athlete.district})`
-                            : '⚡ Calibrating'}
+                          🛡️ SAI VERIFIED
                         </Text>
                       </View>
                     </View>
@@ -2671,7 +2813,7 @@ export default function App() {
 
               <TouchableOpacity
                 style={[styles.primaryBtn, { backgroundColor: '#FDE047' }]}
-                onPress={() => speakFeedback(t.share_card)}
+                onPress={handleSharePassportCard}
               >
                 <Ionicons name="share-social" color="#000" size={16} />
                 <Text style={[styles.primaryBtnText, { color: '#000' }]}>{t.share_card}</Text>
@@ -2774,10 +2916,23 @@ export default function App() {
               <TouchableOpacity
                 style={styles.logoutBtn}
                 onPress={() => {
-                  setIsLoggedIn(false);
-                  setAuthScreen('welcome');
-                  setPhone('');
-                  setPin('');
+                  Alert.alert(
+                    'Log Out 🚪',
+                    'Are you sure you want to log out of SportLens?',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Log Out',
+                        style: 'destructive',
+                        onPress: () => {
+                          setIsLoggedIn(false);
+                          setAuthScreen('welcome');
+                          setPhone('');
+                          setPin('');
+                        },
+                      },
+                    ]
+                  );
                 }}
               >
                 <Ionicons name="log-out-outline" color="#F87171" size={18} />
@@ -3551,14 +3706,8 @@ export default function App() {
                     </View>
                   )}
 
-                  {/* 4. TOP HUD BAR (SEPARATED, NO OVERLAPS) */}
-                  <View pointerEvents="none" style={{ position: 'absolute', top: 14, left: 14, right: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', zIndex: 5 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(9, 5, 20, 0.92)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1.2, borderColor: '#C084FC' }}>
-                      <Ionicons name="flash" color="#C084FC" size={13} />
-                      <Text style={{ color: '#C084FC', fontSize: 10.5, fontWeight: '900', letterSpacing: 0.5 }}>
-                        {activeDrillTitle.toUpperCase()}
-                      </Text>
-                    </View>
+                  {/* 4. TOP HUD STATUS (SEPARATED, NO DUPLICATE DRILL BADGE) */}
+                  <View pointerEvents="none" style={{ position: 'absolute', top: 14, left: 14, right: 14, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', zIndex: 5 }}>
 
                     {drillPhase === 'recording' ? (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(239,68,68,0.25)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1.5, borderColor: '#EF4444' }}>

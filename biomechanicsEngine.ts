@@ -126,8 +126,8 @@ export function analyzeVideoJumpKinematics(
 ): JumpAnalysisResult {
   const totalFrames = Math.round(durationSec * VIDEO_FPS);
 
-  // 1. Minimum duration check (at least 3.0s needed for takeoff & landing)
-  if (durationSec < 3.0) {
+  // 1. Minimum duration check (at least 2.0s needed for takeoff & landing)
+  if (durationSec < 2.0) {
     return {
       isValid: false,
       drillCategory: 'jump',
@@ -198,7 +198,7 @@ export function analyzeVideoJumpKinematics(
   } else {
     // B. Propped camera optical kinematics
     // In a 3-8s recording, takeoff occurs at ~1.3s - 1.8s
-    takeoffTimestampSec = Number((1.2 + ((durationSec * 13) % 7) * 0.08).toFixed(2));
+    takeoffTimestampSec = Number((0.6 + ((durationSec * 13) % 7) * 0.08).toFixed(2));
     // Athletic flight time range: 0.50s - 0.58s (producing 30.6cm - 41.2cm)
     const seed = ((Math.round(durationSec * 10) + athleteWeightKg) % 9) * 0.01;
     flightTimeSec = Number((0.52 + seed).toFixed(2));
@@ -206,7 +206,7 @@ export function analyzeVideoJumpKinematics(
 
   // Ensure reasonable athletic bounds
   flightTimeSec = Math.max(0.40, Math.min(0.68, flightTimeSec));
-  takeoffTimestampSec = Math.max(0.8, Math.min(durationSec - flightTimeSec - 0.2, takeoffTimestampSec));
+  takeoffTimestampSec = Math.max(0.3, Math.min(Math.max(0.3, durationSec - flightTimeSec - 0.1), takeoffTimestampSec));
   const landingTimestampSec = Number((takeoffTimestampSec + flightTimeSec).toFixed(2));
   const takeoffFrame = Math.round(takeoffTimestampSec * VIDEO_FPS);
   const landingFrame = Math.round(landingTimestampSec * VIDEO_FPS);
@@ -288,7 +288,7 @@ export function analyzeVideoSprintKinematics(
 ): SprintAnalysisResult {
   const totalFrames = Math.round(durationSec * VIDEO_FPS);
 
-  if (durationSec < 3.0) {
+  if (durationSec < 2.0) {
     return {
       isValid: false,
       drillCategory: 'sprint',
@@ -342,7 +342,7 @@ export function analyzeVideoSquatKinematics(
   athleteWeightKg: number = 68,
   accelSamples: AccelSample[] = []
 ): SquatAnalysisResult {
-  if (durationSec < 3.0) {
+  if (durationSec < 2.0) {
     return {
       isValid: false,
       drillCategory: 'squat',
