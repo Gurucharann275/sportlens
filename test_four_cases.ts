@@ -1,4 +1,5 @@
 const jpeg = require('jpeg-js');
+declare var Buffer: any;
 import { analyzeVideoJumpKinematics } from './biomechanicsEngine';
 
 function createJpeg(w: number, h: number, paintFn: (buf: Uint8Array, w: number, h: number) => void): string {
@@ -115,15 +116,93 @@ function makeAccelShaking(count = 40) {
   return samples;
 }
 
-function runTests() {
+function buildTestMp4(durationSec = 2.5, fps = 30, isJump = true): Uint8Array {
+  const totalFrames = Math.round(durationSec * fps);
+  const timescale = 600;
+  const durationUnits = Math.round(durationSec * timescale);
+  const sampleDelta = Math.round(timescale / fps);
+
+  function box(type: string, payload: any) {
+    const len = 8 + payload.length;
+    const b = Buffer.alloc(len);
+    b.writeUInt32BE(len, 0);
+    b.write(type, 4, 4, 'ascii');
+    payload.copy(b, 8);
+    return b;
+  }
+
+  const ftypPayload = Buffer.alloc(16);
+  ftypPayload.write('mp42', 0, 4, 'ascii');
+  ftypPayload.writeUInt32BE(0, 4);
+  ftypPayload.write('mp42', 8, 4, 'ascii');
+  ftypPayload.write('isom', 12, 4, 'ascii');
+  const ftyp = box('ftyp', ftypPayload);
+
+  const mvhdPayload = Buffer.alloc(100);
+  mvhdPayload.writeUInt8(0, 0);
+  mvhdPayload.writeUInt32BE(timescale, 12);
+  mvhdPayload.writeUInt32BE(durationUnits, 16);
+  const mvhd = box('mvhd', mvhdPayload);
+
+  const tkhdPayload = Buffer.alloc(84);
+  tkhdPayload.writeUInt8(0, 0);
+  tkhdPayload.writeUInt32BE(1, 12);
+  tkhdPayload.writeUInt32BE(1280 << 16, 76);
+  tkhdPayload.writeUInt32BE(720 << 16, 80);
+  const tkhd = box('tkhd', tkhdPayload);
+
+  const mdhdPayload = Buffer.alloc(24);
+  mdhdPayload.writeUInt8(0, 0);
+  mdhdPayload.writeUInt32BE(timescale, 12);
+  mdhdPayload.writeUInt32BE(durationUnits, 16);
+  const mdhd = box('mdhd', mdhdPayload);
+
+  const hdlrPayload = Buffer.alloc(25);
+  hdlrPayload.write('vide', 8, 4, 'ascii');
+  const hdlr = box('hdlr', hdlrPayload);
+
+  const sttsPayload = Buffer.alloc(16);
+  sttsPayload.writeUInt32BE(1, 4);
+  sttsPayload.writeUInt32BE(totalFrames, 8);
+  sttsPayload.writeUInt32BE(sampleDelta, 12);
+  const stts = box('stts', sttsPayload);
+
+  const stszPayload = Buffer.alloc(12 + totalFrames * 4);
+  stszPayload.writeUInt32BE(0, 4);
+  stszPayload.writeUInt32BE(totalFrames, 8);
+  for (let i = 0; i < totalFrames; i++) {
+    let size = 2500;
+    if (i === 0) size = 35000;
+    else if (isJump) {
+      if (i >= 15 && i < 20) size = 5200;
+      else if (i >= 20 && i < 33) size = 18500;
+      else if (i >= 33 && i < 37) size = 24000;
+    }
+    stszPayload.writeUInt32BE(size, 12 + i * 4);
+  }
+  const stsz = box('stsz', stszPayload);
+
+  const stbl = box('stbl', Buffer.concat([stts, stsz]));
+  const minf = box('minf', Buffer.concat([stbl]));
+  const mdia = box('mdia', Buffer.concat([mdhd, hdlr, minf]));
+  const trak = box('trak', Buffer.concat([tkhd, mdia]));
+  const moov = box('moov', Buffer.concat([mvhd, trak]));
+
+  return new Uint8Array(Buffer.concat([ftyp, moov]));
+}
+
+async function runTests() {
   console.log('================================================================');
   console.log('SPORTLENS COMPUTER VISION & INDEPENDENT IMU ACCEPTANCE SUITE');
   console.log('================================================================\n');
 
+  const mp4Static = buildTestMp4(2.0, 30, false);
+  const mp4Jump = buildTestMp4(2.5, 30, true);
+
   // TEST CASE A: FACE ONLY
   console.log('>>> TEST CASE A: FACE ONLY RECORDING');
   const faceSnaps = [{ base64: makeFaceFrame() }, { base64: makeFaceFrame() }];
-  const resA = analyzeVideoJumpKinematics(2.0, 68, makeAccelStatic(), 'file:///test_video.mp4', faceSnaps);
+  const resA = await analyzeVideoJumpKinematics(2.0, 68, makeAccelStatic(), 'file:///test_video.mp4', faceSnaps, mp4Static);
   console.log('Status: isValid =', resA.isValid, '| Score =', resA.score, '| Height =', resA.jumpHeightCm, 'cm');
   console.log('Gate 2 (Full-Body Framing):', resA.gates![1].passed ? 'PASS' : 'FAIL', '-', resA.gates![1].telemetry);
   console.log('Gate 10 (Metric Calculated):', resA.gates![9].passed ? 'PASS' : 'FAIL', '-', resA.gates![9].telemetry);
@@ -131,7 +210,7 @@ function runTests() {
   // TEST CASE B: BLANK WALL
   console.log('\n>>> TEST CASE B: BLANK WALL / EMPTY ROOM');
   const wallSnaps = [{ base64: makeWallFrame() }];
-  const resB = analyzeVideoJumpKinematics(2.0, 68, makeAccelStatic(), 'file:///test_video.mp4', wallSnaps);
+  const resB = await analyzeVideoJumpKinematics(2.0, 68, makeAccelStatic(), 'file:///test_video.mp4', wallSnaps, mp4Static);
   console.log('Status: isValid =', resB.isValid, '| Score =', resB.score, '| Height =', resB.jumpHeightCm, 'cm');
   console.log('Gate 1 (Single Athlete):', resB.gates![0].passed ? 'PASS' : 'FAIL', '-', resB.gates![0].telemetry);
   console.log('Gate 10 (Metric Calculated):', resB.gates![9].passed ? 'PASS' : 'FAIL', '-', resB.gates![9].telemetry);
@@ -143,7 +222,7 @@ function runTests() {
     { base64: makeBodyFrame(120, 160, 0) },
     { base64: makeBodyFrame(120, 160, 0) },
   ];
-  const resC = analyzeVideoJumpKinematics(2.0, 68, makeAccelStatic(), 'file:///test_video.mp4', stillSnaps);
+  const resC = await analyzeVideoJumpKinematics(2.0, 68, makeAccelStatic(), 'file:///test_video.mp4', stillSnaps, mp4Static);
   console.log('Status: isValid =', resC.isValid, '| Score =', resC.score, '| Height =', resC.jumpHeightCm, 'cm');
   console.log('Gate 6 (Movement Detected):', resC.gates![5].passed ? 'PASS' : 'FAIL', '-', resC.gates![5].telemetry);
   console.log('Gate 7 (Exercise Events):', resC.gates![6].passed ? 'PASS' : 'FAIL', '-', resC.gates![6].telemetry);
@@ -157,7 +236,7 @@ function runTests() {
     { base64: makeBodyFrame(120, 160, 0.14) }, // Takeoff & flight apex
     { base64: makeBodyFrame(120, 160, 0) }, // Landing
   ];
-  const resD = analyzeVideoJumpKinematics(2.5, 68, makeAccelJump(), 'file:///test_video.mp4', jumpSnaps);
+  const resD = await analyzeVideoJumpKinematics(2.5, 68, makeAccelJump(), 'file:///test_video.mp4', jumpSnaps, mp4Jump);
   console.log('Status: isValid =', resD.isValid, '| Score =', resD.score);
   console.log('Calculated Jump Height:', resD.jumpHeightCm, 'cm');
   console.log('Calculated Flight Time:', resD.flightTimeSec, 's');
@@ -169,7 +248,7 @@ function runTests() {
 
   // TEST CASE E: MOVE PHONE AROUND WITHOUT JUMPING
   console.log('\n>>> TEST CASE E: MOVE PHONE AROUND WITHOUT JUMPING (SHAKING)');
-  const resE = analyzeVideoJumpKinematics(2.0, 68, makeAccelShaking(), 'file:///test_video.mp4', stillSnaps);
+  const resE = await analyzeVideoJumpKinematics(2.0, 68, makeAccelShaking(), 'file:///test_video.mp4', stillSnaps, mp4Static);
   console.log('Status: isValid =', resE.isValid, '| Score =', resE.score, '| Height =', resE.jumpHeightCm, 'cm');
   console.log('Gate 4 (Camera/Device Stable):', resE.gates![3].passed ? 'PASS' : 'FAIL', '-', resE.gates![3].telemetry);
   console.log('Gate 8 (IMU Agreement):', resE.gates![7].passed ? 'PASS' : 'FAIL', '-', resE.gates![7].telemetry);

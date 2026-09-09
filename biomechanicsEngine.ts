@@ -7,11 +7,16 @@
 
 import {
   analyzeOpticalCapture,
+  analyzeOpticalCaptureAsync,
+  loadVideoBytesAsync,
+  loadVideoBytesSync,
+  parseMp4Kinematics,
+  Mp4Kinematics,
   OpticalSnapshot,
   VisionAnalysisResult,
 } from './computerVisionEngine';
 
-export type { OpticalSnapshot, VisionAnalysisResult };
+export type { OpticalSnapshot, VisionAnalysisResult, Mp4Kinematics };
 
 export interface AccelSample {
   x: number;  // G-force on x axis
@@ -224,17 +229,28 @@ export function buildTenGates(params: {
 // Takeoff -> Airborne flight (a ≈ 0G) -> Landing impact -> Stable state
 // ============================================================================
 
-export function analyzeVideoJumpKinematics(
+export function analyzeVideoJumpKinematicsSync(
   durationSec: number,
   athleteWeightKg: number = 68,
   accelSamples: AccelSample[] = [],
   videoUri: string | null = null,
-  snapshots: OpticalSnapshot[] = []
+  snapshots: OpticalSnapshot[] = [],
+  mp4Bytes?: Uint8Array | null,
+  preDecodedMp4?: Mp4Kinematics | null
 ): JumpAnalysisResult {
   const totalFrames = Math.round(durationSec * VIDEO_FPS);
 
-  // Run real optical capture + accelerometer sensor fusion analysis
-  const vision = analyzeOpticalCapture(videoUri, durationSec, athleteWeightKg, accelSamples, snapshots, 'jump');
+  // Run real optical capture + MP4 video stream + accelerometer sensor fusion analysis
+  const vision = analyzeOpticalCapture(
+    videoUri,
+    durationSec,
+    athleteWeightKg,
+    accelSamples,
+    snapshots,
+    'jump',
+    preDecodedMp4,
+    mp4Bytes
+  );
 
   const gates = buildTenGates({
     drillCategory: 'jump',
@@ -348,6 +364,39 @@ export function analyzeVideoJumpKinematics(
     gates,
   };
 }
+
+/**
+ * Asynchronous Vertical Jump Kinematics Evaluator.
+ * Automatically loads and demuxes the MP4 video file from videoUri via fetch() in React Native,
+ * and fuses optical frame silhouettes + MP4 video track + 100Hz hardware IMU sensors.
+ */
+export async function analyzeVideoJumpKinematics(
+  durationSec: number,
+  athleteWeightKg: number = 68,
+  accelSamples: AccelSample[] = [],
+  videoUri: string | null = null,
+  snapshots: OpticalSnapshot[] = [],
+  mp4Bytes?: Uint8Array | null,
+  preDecodedMp4?: Mp4Kinematics | null
+): Promise<JumpAnalysisResult> {
+  let loadedBytes = mp4Bytes || null;
+  if (!loadedBytes && !preDecodedMp4 && videoUri) {
+    try {
+      loadedBytes = await loadVideoBytesAsync(videoUri);
+    } catch (e) {}
+  }
+  return analyzeVideoJumpKinematicsSync(
+    durationSec,
+    athleteWeightKg,
+    accelSamples,
+    videoUri,
+    snapshots,
+    loadedBytes,
+    preDecodedMp4
+  );
+}
+
+export const analyzeVideoJumpKinematicsAsync = analyzeVideoJumpKinematics;
 
 // ============================================================================
 // SPRINT & CADENCE KINEMATICS EVALUATOR

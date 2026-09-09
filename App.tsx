@@ -1281,7 +1281,7 @@ export default function App() {
       }
 
       // 1.2s AI Biomechanics sensor processing animation
-      setTimeout(() => {
+      setTimeout(async () => {
         const athleteWeight = athlete.weight || 68;
         let newStats = { ...athlete.stats };
         let newUnits = { ...(athlete.rawUnits || {}) };
@@ -1299,7 +1299,7 @@ export default function App() {
         let bioResult: BiomechanicsResult;
 
         if (activeDrillCategory === 'jump') {
-          const jumpRes = analyzeVideoJumpKinematics(recordDurationSec, athleteWeight, accelSamples, finalVideoUri, snapshots);
+          const jumpRes = await analyzeVideoJumpKinematics(recordDurationSec, athleteWeight, accelSamples, finalVideoUri, snapshots);
         bioResult = jumpRes;
 
         if (jumpRes.isValid) {
