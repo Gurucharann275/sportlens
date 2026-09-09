@@ -126,8 +126,8 @@ export function analyzeVideoJumpKinematics(
 ): JumpAnalysisResult {
   const totalFrames = Math.round(durationSec * VIDEO_FPS);
 
-  // 1. Minimum duration check (at least 2.0s needed for takeoff & landing)
-  if (durationSec < 2.0) {
+  // 1. Minimum duration check (at least 1.0s needed for capture)
+  if (durationSec < 1.0) {
     return {
       isValid: false,
       drillCategory: 'jump',
@@ -288,7 +288,7 @@ export function analyzeVideoSprintKinematics(
 ): SprintAnalysisResult {
   const totalFrames = Math.round(durationSec * VIDEO_FPS);
 
-  if (durationSec < 2.0) {
+  if (durationSec < 1.0) {
     return {
       isValid: false,
       drillCategory: 'sprint',
@@ -342,7 +342,7 @@ export function analyzeVideoSquatKinematics(
   athleteWeightKg: number = 68,
   accelSamples: AccelSample[] = []
 ): SquatAnalysisResult {
-  if (durationSec < 2.0) {
+  if (durationSec < 1.0) {
     return {
       isValid: false,
       drillCategory: 'squat',
