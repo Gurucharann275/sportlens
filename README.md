@@ -36,7 +36,6 @@
   - Filter verified talent by State (28 States + 8 UTs), Sport, OVR rating, and Age.
   - Frame-by-frame 60 FPS video audit scrubber with 33-point biomechanics breakdown.
   - Direct 1-Tap Scouting Call-Up dispatch system.
-  - **100% Incognito Ghost Mode**: Privacy safeguards for confidential athlete profiles.
 
 ---
 

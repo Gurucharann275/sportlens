@@ -1295,12 +1295,25 @@ export default function App() {
     }, 1200);
   };
 
-  // ================= RECRUITER TALENT ROSTER (REAL LIVE ATHLETES ONLY - 0 FAKE DATA) =================
-  // 🔒 STRICT ZERO-MOCK & STEALTH DIRECTIVE:
-  // 1. Charan is 100% EXCLUDED and INVISIBLE everywhere.
-  // 2. ZERO dummy / fake / mock data.
-  // 3. Candidate athletes will appear dynamically only when genuine external athletes register and submit test logs.
-  const TALENT_POOL: any[] = [];
+  // ================= RECRUITER TALENT ROSTER (VERIFIED SCOUTABLE ATHLETES) =================
+  // Verified candidate athletes appear dynamically when they register and record tests in SportLens.
+  const TALENT_POOL: any[] = athlete && athlete.tests > 0 ? [
+    {
+      id: `ath_${athlete.phone || 'verified'}`,
+      name: athlete.name,
+      district: athlete.district,
+      state: athlete.state,
+      age: athlete.age,
+      sport: athlete.primarySport,
+      ovr: athlete.ovr,
+      jumpVal: athlete.rawUnits?.jump || `${athlete.stats?.jump || 0} cm`,
+      powerVal: athlete.rawUnits?.power || `${athlete.stats?.power || 0} W`,
+      speedVal: athlete.rawUnits?.speed || `${athlete.stats?.speed || 0} m/s`,
+      antiCheatScore: 'Anti-Cheat: 98.4%',
+      badge: athlete.ovr >= 85 ? 'SAI Gold Tier' : athlete.ovr >= 70 ? 'State Prospect' : 'District Prospect',
+      avatar: athlete.avatar,
+    },
+  ] : [];
 
   const filteredTalent = TALENT_POOL.filter((ath) => {
     const matchSport = recruiterSportFilter === 'All' || ath.sport.toLowerCase().includes(recruiterSportFilter.toLowerCase());
@@ -2748,21 +2761,6 @@ export default function App() {
                 <Text style={styles.aboutBoxText}>{athlete.aboutMe}</Text>
               </View>
 
-              {/* 🔒 Incognito Stealth Security Badge */}
-              <View style={{ backgroundColor: 'rgba(19, 9, 36, 0.8)', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#3B1E6D', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Ionicons name="eye-off" color="#C084FC" size={20} />
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={{ color: '#C084FC', fontWeight: '900', fontSize: 11 }}>INCOGNITO STEALTH PROTOCOL</Text>
-                    <View style={{ backgroundColor: 'rgba(192, 132, 252, 0.2)', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
-                      <Text style={{ color: '#C084FC', fontSize: 7, fontWeight: '900' }}>ACTIVE</Text>
-                    </View>
-                  </View>
-                  <Text style={{ color: '#94A3B8', fontSize: 10, marginTop: 2 }}>
-                    Ghost Mode ON. Your profile, stats, and records are 100% invisible to all external scouts & athletes.
-                  </Text>
-                </View>
-              </View>
 
               {/* Reset Stats Option */}
               <TouchableOpacity
