@@ -364,6 +364,7 @@ export default function App() {
   const accelSamplesRef = useRef<AccelSample[]>([]);
   const cameraRef = useRef<any>(null);
   const recordedVideoUriRef = useRef<string | null>(null);
+  const recordingPromiseRef = useRef<Promise<any> | null>(null);
   const opticalSnapshotsRef = useRef<OpticalSnapshot[]>([]);
   const isFrameCapturingRef = useRef(false);
   const frameCaptureTimeoutRef = useRef<any>(null);
@@ -1092,12 +1093,32 @@ export default function App() {
         setDrillPhase('recording');
         setRecordDurationSec(0);
 
-        // ── RESET SAMPLES & START REAL OPTICAL FRAME STREAM CAPTURE ──
+        // ── RESET SAMPLES & START REAL VIDEO + OPTICAL CAPTURE ──
         accelSamplesRef.current = [];
         opticalSnapshotsRef.current = [];
         recordedVideoUriRef.current = null;
         isFrameCapturingRef.current = true;
 
+        // 1. Start real native CameraView video recording (.mp4 stream)
+        if (cameraRef.current && typeof cameraRef.current.recordAsync === 'function') {
+          try {
+            const recPromise = cameraRef.current.recordAsync({ maxDuration: 60, mute: true });
+            recordingPromiseRef.current = recPromise;
+            recPromise
+              .then((result: any) => {
+                if (result?.uri) {
+                  recordedVideoUriRef.current = result.uri;
+                }
+              })
+              .catch((err: any) => {
+                console.warn('CameraView.recordAsync catch:', err);
+              });
+          } catch (e) {
+            console.warn('recordAsync invocation error:', e);
+          }
+        }
+
+        // 2. Optical snapshot stream for on-device silhouette analysis
         const captureFrameLoop = async () => {
           if (!isFrameCapturingRef.current) return;
           try {
@@ -1119,14 +1140,14 @@ export default function App() {
               }
             }
           } catch (e) {
-            // non-blocking
+            // non-blocking if camera is busy with video encoder
           }
           if (isFrameCapturingRef.current) {
-            frameCaptureTimeoutRef.current = setTimeout(captureFrameLoop, 200);
+            frameCaptureTimeoutRef.current = setTimeout(captureFrameLoop, 220);
           }
         };
 
-        // Capture initial baseline frame immediately, then stream every 200ms
+        // Capture initial calibration frame immediately, then stream periodically
         captureFrameLoop();
 
         // ── START REAL ACCELEROMETER DATA COLLECTION AT 100Hz ──
@@ -1243,26 +1264,42 @@ export default function App() {
     // Enter AI analyzing state
     setDrillPhase('analyzing');
 
-    // 1.2s AI Biomechanics sensor processing animation
-    setTimeout(() => {
-      const athleteWeight = athlete.weight || 68;
-      let newStats = { ...athlete.stats };
-      let newUnits = { ...(athlete.rawUnits || {}) };
-      let score = 50;
-      let calibratedList: string[] = [];
-      let feedback = '';
+    (async () => {
+      // ── AWAIT REAL VIDEO RECORDING FROM CameraView.recordAsync() ──
+      let videoUri = recordedVideoUriRef.current;
+      if (!videoUri && recordingPromiseRef.current) {
+        try {
+          const recRes = await Promise.race([
+            recordingPromiseRef.current,
+            new Promise((resolve) => setTimeout(() => resolve(null), 1000)),
+          ]);
+          if (recRes && (recRes as any).uri) {
+            videoUri = (recRes as any).uri;
+            recordedVideoUriRef.current = videoUri;
+          }
+        } catch (e) {}
+      }
 
-      // ── GRAB REAL ACCELEROMETER SAMPLES, VIDEO URI & OPTICAL SNAPSHOTS ──
-      const accelSamples = [...accelSamplesRef.current];
-      accelSamplesRef.current = [];
-      const videoUri = recordedVideoUriRef.current;
-      const snapshots = [...opticalSnapshotsRef.current];
-      opticalSnapshotsRef.current = [];
+      // 1.2s AI Biomechanics sensor processing animation
+      setTimeout(() => {
+        const athleteWeight = athlete.weight || 68;
+        let newStats = { ...athlete.stats };
+        let newUnits = { ...(athlete.rawUnits || {}) };
+        let score = 50;
+        let calibratedList: string[] = [];
+        let feedback = '';
 
-      let bioResult: BiomechanicsResult;
+        // ── GRAB REAL ACCELEROMETER SAMPLES, VIDEO URI & OPTICAL SNAPSHOTS ──
+        const accelSamples = [...accelSamplesRef.current];
+        accelSamplesRef.current = [];
+        const finalVideoUri = recordedVideoUriRef.current || videoUri;
+        const snapshots = [...opticalSnapshotsRef.current];
+        opticalSnapshotsRef.current = [];
 
-      if (activeDrillCategory === 'jump') {
-        const jumpRes = analyzeVideoJumpKinematics(recordDurationSec, athleteWeight, accelSamples, videoUri, snapshots);
+        let bioResult: BiomechanicsResult;
+
+        if (activeDrillCategory === 'jump') {
+          const jumpRes = analyzeVideoJumpKinematics(recordDurationSec, athleteWeight, accelSamples, finalVideoUri, snapshots);
         bioResult = jumpRes;
 
         if (jumpRes.isValid) {
@@ -1410,6 +1447,7 @@ export default function App() {
         }
       } catch (e) {}
     }, 1200);
+    })();
   };
 
   // ================= RECRUITER TALENT ROSTER (VERIFIED SCOUTABLE ATHLETES) =================
@@ -3710,7 +3748,7 @@ export default function App() {
                     ref={cameraRef}
                     style={StyleSheet.absoluteFill}
                     facing={cameraFacing}
-                    mode="picture"
+                    mode="video"
                     mute={true}
                   />
 

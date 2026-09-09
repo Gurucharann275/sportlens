@@ -148,8 +148,8 @@ export function buildTenGates(params: {
     },
     {
       gateNumber: 2,
-      title: 'Required Keypoints Visible',
-      requirement: '14 anatomical kinetic chain landmarks visible (head to toe)',
+      title: 'Full-Body Silhouette Framing',
+      requirement: 'Full athletic kinetic chain (head, torso, hips, and feet ground plane) in frame',
       passed: params.keypointsVisible,
       telemetry: params.keypointsReason,
     },
@@ -195,7 +195,7 @@ export function buildTenGates(params: {
     {
       gateNumber: 8,
       title: 'IMU Signal Agreement',
-      requirement: 'Cross-modal 100Hz IMU accelerometer aligns with optical motion vectors',
+      requirement: 'Cross-modal 100Hz IMU accelerometer independently confirms optical kinematics',
       passed: params.imuAgrees,
       telemetry: params.imuAgreesReason,
     },
