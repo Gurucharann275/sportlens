@@ -14,8 +14,10 @@ import {
   Alert,
   ActivityIndicator,
   Share,
+  Animated,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -339,6 +341,29 @@ export default function App() {
   useEffect(() => {
     loadAllAthletesFromStorage();
   }, [appMode]);
+
+  // 🎬 Cinematic Brand Intro Video Splash
+  const [showIntroSplash, setShowIntroSplash] = useState(true);
+  const splashFadeAnim = useRef(new Animated.Value(1)).current;
+
+  const handleFinishIntroSplash = () => {
+    Animated.timing(splashFadeAnim, {
+      toValue: 0,
+      duration: 450,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowIntroSplash(false);
+    });
+  };
+
+  useEffect(() => {
+    // Safety fallback: maximum 9.5s in case video finishes or fails to autoplay
+    const timer = setTimeout(() => {
+      handleFinishIntroSplash();
+    }, 9500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const [auditScrubPhase, setAuditScrubPhase] = useState<'load' | 'takeoff' | 'apex' | 'landing'>('apex');
   const [auditCompareMode, setAuditCompareMode] = useState<'sai_national' | 'district_avg'>('sai_national');
 
@@ -1513,11 +1538,65 @@ export default function App() {
     );
   };
 
+  // 🎬 Render Intro Video Splash Overlay
+  const renderIntroSplash = () => {
+    if (!showIntroSplash) return null;
+    return (
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            backgroundColor: '#000000',
+            zIndex: 99999,
+            elevation: 99999,
+            opacity: splashFadeAnim,
+            justifyContent: 'center',
+            alignItems: 'center',
+          },
+        ]}
+      >
+        <StatusBar barStyle="light-content" backgroundColor="#000000" />
+        <Video
+          source={require('./assets/intro.mp4')}
+          style={StyleSheet.absoluteFill}
+          resizeMode={ResizeMode.CONTAIN}
+          shouldPlay
+          isLooping={false}
+          isMuted={false}
+          onPlaybackStatusUpdate={(status: AVPlaybackStatus) => {
+            if (status.isLoaded && status.didJustFinish) {
+              handleFinishIntroSplash();
+            }
+          }}
+          onError={() => handleFinishIntroSplash()}
+        />
+
+        {/* Quick Skip button in top right */}
+        <SafeAreaView style={{ position: 'absolute', top: 12, right: 16, zIndex: 100000 }}>
+          <TouchableOpacity
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              paddingHorizontal: 14,
+              paddingVertical: 7,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.3)',
+            }}
+            onPress={handleFinishIntroSplash}
+          >
+            <Text style={{ color: '#FFF', fontSize: 11, fontWeight: 'bold' }}>Skip ❯</Text>
+          </TouchableOpacity>
+        </SafeAreaView>
+      </Animated.View>
+    );
+  };
+
   // ================= VIEW: AUTHENTICATION FLOW =================
   if (!isLoggedIn) {
     return (
       <SafeAreaView style={styles.safeContainer}>
         <StatusBar barStyle="light-content" backgroundColor="#090514" />
+        {renderIntroSplash()}
 
         <ScrollView style={styles.scrollFlex} contentContainerStyle={styles.loginContent}>
           <View style={styles.loginBrand}>
@@ -2037,6 +2116,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#090514" />
+      {renderIntroSplash()}
 
       {/* TOP HEADER: DUAL-MODE SWITCHER (ATHLETE ⇄ SAI SCOUT) */}
       <View style={styles.headerBar}>
