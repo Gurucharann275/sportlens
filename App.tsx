@@ -365,6 +365,8 @@ export default function App() {
   const cameraRef = useRef<any>(null);
   const recordedVideoUriRef = useRef<string | null>(null);
   const opticalSnapshotsRef = useRef<OpticalSnapshot[]>([]);
+  const isFrameCapturingRef = useRef(false);
+  const frameCaptureTimeoutRef = useRef<any>(null);
   const [liveAccel, setLiveAccel] = useState({ x: 0.02, y: 0.98, z: 0.14 });
   const scanLaserAnim = useRef(new Animated.Value(0)).current;
 
@@ -1090,37 +1092,42 @@ export default function App() {
         setDrillPhase('recording');
         setRecordDurationSec(0);
 
-        // ── RESET SAMPLES & CAPTURE BASELINE READY STANCE SNAPSHOT ──
+        // ── RESET SAMPLES & START REAL OPTICAL FRAME STREAM CAPTURE ──
         accelSamplesRef.current = [];
         opticalSnapshotsRef.current = [];
         recordedVideoUriRef.current = null;
+        isFrameCapturingRef.current = true;
 
-        if (cameraRef.current && typeof cameraRef.current.takePictureAsync === 'function') {
+        const captureFrameLoop = async () => {
+          if (!isFrameCapturingRef.current) return;
           try {
-            cameraRef.current
-              .takePictureAsync({ base64: true, quality: 0.25, skipProcessing: true })
-              .then((snap: any) => {
-                if (snap) opticalSnapshotsRef.current.push(snap);
-              })
-              .catch(() => {});
-          } catch (e) {}
-        }
-
-        // ── START REAL VIDEO RECORDING ON CAMERA (CACHE STREAM) ──
-        if (cameraRef.current && typeof cameraRef.current.recordAsync === 'function') {
-          try {
-            const recPromise = cameraRef.current.recordAsync({ maxDuration: 60, mute: true });
-            if (recPromise && typeof recPromise.then === 'function') {
-              recPromise
-                .then((result: any) => {
-                  if (result?.uri) {
-                    recordedVideoUriRef.current = result.uri;
-                  }
-                })
-                .catch(() => {});
+            if (cameraRef.current && typeof cameraRef.current.takePictureAsync === 'function') {
+              const snap = await cameraRef.current.takePictureAsync({
+                base64: true,
+                quality: 0.18,
+                skipProcessing: true,
+                shutterSound: false,
+              });
+              if (snap && snap.base64) {
+                opticalSnapshotsRef.current.push({
+                  uri: snap.uri,
+                  width: snap.width || 480,
+                  height: snap.height || 640,
+                  base64: snap.base64,
+                  timestampMs: Date.now(),
+                });
+              }
             }
-          } catch (e) {}
-        }
+          } catch (e) {
+            // non-blocking
+          }
+          if (isFrameCapturingRef.current) {
+            frameCaptureTimeoutRef.current = setTimeout(captureFrameLoop, 200);
+          }
+        };
+
+        // Capture initial baseline frame immediately, then stream every 200ms
+        captureFrameLoop();
 
         // ── START REAL ACCELEROMETER DATA COLLECTION AT 100Hz ──
         accelSamplesRef.current = [];
@@ -1162,6 +1169,11 @@ export default function App() {
       clearInterval(recordTimerRef.current);
       recordTimerRef.current = null;
     }
+    isFrameCapturingRef.current = false;
+    if (frameCaptureTimeoutRef.current) {
+      clearTimeout(frameCaptureTimeoutRef.current);
+      frameCaptureTimeoutRef.current = null;
+    }
     if (accelSubRef.current) {
       try { accelSubRef.current.remove(); } catch (e) {}
       accelSubRef.current = null;
@@ -1187,6 +1199,11 @@ export default function App() {
     if (recordTimerRef.current) {
       clearInterval(recordTimerRef.current);
       recordTimerRef.current = null;
+    }
+    isFrameCapturingRef.current = false;
+    if (frameCaptureTimeoutRef.current) {
+      clearTimeout(frameCaptureTimeoutRef.current);
+      frameCaptureTimeoutRef.current = null;
     }
     if (accelSubRef.current) {
       try { accelSubRef.current.remove(); } catch (e) {}
@@ -3693,7 +3710,7 @@ export default function App() {
                     ref={cameraRef}
                     style={StyleSheet.absoluteFill}
                     facing={cameraFacing}
-                    mode="video"
+                    mode="picture"
                     mute={true}
                   />
 
