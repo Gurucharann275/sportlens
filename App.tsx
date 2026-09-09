@@ -18,6 +18,7 @@ import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Accelerometer } from 'expo-sensors';
@@ -193,13 +194,6 @@ const getLocalizedSquatFeedback = (flexionDeg: number, valgusDeg: number, lang: 
   return map[lang] || map.en;
 };
 
-const AVATAR_PRESETS = [
-  { id: '1', title: 'Volleyball / Athlete', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80' },
-  { id: '2', title: 'Football / Striker', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80' },
-  { id: '3', title: 'Sprinter / Track', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80' },
-  { id: '4', title: 'Cricket / Pace', url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&auto=format&fit=crop&q=80' },
-  { id: '5', title: 'Badminton / Pro', url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=80' },
-];
 
 export default function App() {
   // 🌟 APP MODE: Athlete Mode vs Recruiter / SAI Scout Mode
@@ -839,6 +833,49 @@ export default function App() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {}
     Alert.alert('Photo Updated', newUrl ? 'New profile photo set!' : 'Reset to default silhouette avatar.');
+  };
+
+  // 📸 Take Photo via Device Camera
+  const handleTakePhoto = async () => {
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Camera Permission Required', 'SportLens needs camera access to take your profile picture.');
+        return;
+      }
+      const res = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+      if (!res.canceled && res.assets && res.assets[0]?.uri) {
+        await handleSelectAvatar(res.assets[0].uri);
+      }
+    } catch (e) {
+      Alert.alert('Camera Error', 'Could not open camera. Please try selecting from gallery instead.');
+    }
+  };
+
+  // 🖼️ Upload Photo from Device Gallery
+  const handlePickFromGallery = async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Gallery Permission Required', 'SportLens needs permission to access your photo gallery.');
+        return;
+      }
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+      if (!res.canceled && res.assets && res.assets[0]?.uri) {
+        await handleSelectAvatar(res.assets[0].uri);
+      }
+    } catch (e) {
+      Alert.alert('Gallery Error', 'Could not open photo gallery. Please try again.');
+    }
   };
 
   // Reset all stats back to 0
@@ -3270,11 +3307,42 @@ export default function App() {
               </TouchableOpacity>
             </View>
 
-            <Text style={{ color: '#94A3B8', fontSize: 11, marginBottom: 12 }}>
-              Select an athlete avatar or revert to the default Instagram-style silhouette.
+            <Text style={{ color: '#94A3B8', fontSize: 11, marginBottom: 14 }}>
+              Take a live photo with your camera or upload an image from your device gallery.
             </Text>
 
-            <View style={{ gap: 8 }}>
+            <View style={{ gap: 10 }}>
+              {/* Option 1: Take Photo */}
+              <TouchableOpacity
+                style={[styles.avatarChoiceRow, { borderColor: '#8B5CF6' }]}
+                onPress={handleTakePhoto}
+              >
+                <View style={[styles.avatarChoiceSilhouette, { backgroundColor: 'rgba(139, 92, 246, 0.2)' }]}>
+                  <Ionicons name="camera" color="#C084FC" size={22} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 13 }}>📸 Take a Photo</Text>
+                  <Text style={{ color: '#94A3B8', fontSize: 10.5 }}>Open camera to take a new portrait</Text>
+                </View>
+                <Ionicons name="chevron-forward" color="#8B5CF6" size={18} />
+              </TouchableOpacity>
+
+              {/* Option 2: Upload from Gallery */}
+              <TouchableOpacity
+                style={[styles.avatarChoiceRow, { borderColor: '#38BDF8' }]}
+                onPress={handlePickFromGallery}
+              >
+                <View style={[styles.avatarChoiceSilhouette, { backgroundColor: 'rgba(56, 189, 248, 0.2)' }]}>
+                  <Ionicons name="images" color="#38BDF8" size={22} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 13 }}>🖼️ Upload from Gallery</Text>
+                  <Text style={{ color: '#94A3B8', fontSize: 10.5 }}>Choose an existing picture from your phone</Text>
+                </View>
+                <Ionicons name="chevron-forward" color="#38BDF8" size={18} />
+              </TouchableOpacity>
+
+              {/* Option 3: Remove / Empty Silhouette */}
               <TouchableOpacity
                 style={[styles.avatarChoiceRow, !athlete.avatar && styles.avatarChoiceRowActive]}
                 onPress={() => handleSelectAvatar(null)}
@@ -3283,26 +3351,11 @@ export default function App() {
                   <Ionicons name="person" color="#94A3B8" size={22} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>Empty Silhouette</Text>
-                  <Text style={{ color: '#64748B', fontSize: 10 }}>Default Instagram-style blank avatar</Text>
+                  <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12.5 }}>Empty Silhouette</Text>
+                  <Text style={{ color: '#64748B', fontSize: 10 }}>Remove photo & reset to default avatar</Text>
                 </View>
                 {!athlete.avatar && <Ionicons name="checkmark-circle" color="#8B5CF6" size={20} />}
               </TouchableOpacity>
-
-              {AVATAR_PRESETS.map((preset) => (
-                <TouchableOpacity
-                  key={preset.id}
-                  style={[styles.avatarChoiceRow, athlete.avatar === preset.url && styles.avatarChoiceRowActive]}
-                  onPress={() => handleSelectAvatar(preset.url)}
-                >
-                  <Image source={{ uri: preset.url }} style={styles.avatarChoiceImg} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>{preset.title}</Text>
-                    <Text style={{ color: '#64748B', fontSize: 10 }}>Verified Athlete Portrait</Text>
-                  </View>
-                  {athlete.avatar === preset.url && <Ionicons name="checkmark-circle" color="#8B5CF6" size={20} />}
-                </TouchableOpacity>
-              ))}
             </View>
           </View>
         </View>
