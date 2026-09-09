@@ -17,7 +17,7 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { INTRO_VIDEO_DATA } from './introBase64';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1538,9 +1538,59 @@ export default function App() {
     );
   };
 
-  // 🎬 Render Intro Video Splash Overlay
+  // 🎬 Render Intro Video Splash Overlay (Hardware-Accelerated WebView)
   const renderIntroSplash = () => {
     if (!showIntroSplash) return null;
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; background: #000; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    background-color: #000000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+  video {
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain;
+    background: #000;
+  }
+</style>
+</head>
+<body>
+  <video id="vid" autoplay playsinline webkit-playsinline src="${INTRO_VIDEO_DATA}"></video>
+  <script>
+    var v = document.getElementById('vid');
+    v.onended = function() {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage('ended');
+      }
+    };
+    v.onerror = function() {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage('error');
+      }
+    };
+    document.addEventListener('DOMContentLoaded', function() {
+      v.play().catch(function() {
+        v.muted = true;
+        v.play();
+      });
+    });
+  </script>
+</body>
+</html>
+    `;
+
     return (
       <Animated.View
         style={[
@@ -1556,15 +1606,16 @@ export default function App() {
         ]}
       >
         <StatusBar barStyle="light-content" backgroundColor="#000000" />
-        <Video
-          source={require('./assets/intro.mp4')}
-          style={StyleSheet.absoluteFill}
-          resizeMode={ResizeMode.CONTAIN}
-          shouldPlay
-          isLooping={false}
-          isMuted={false}
-          onPlaybackStatusUpdate={(status: AVPlaybackStatus) => {
-            if (status.isLoaded && status.didJustFinish) {
+        <WebView
+          originWhitelist={['*']}
+          source={{ html: htmlContent }}
+          style={{ width: '100%', height: '100%', backgroundColor: '#000000' }}
+          allowsInlineMediaPlayback={true}
+          mediaPlaybackRequiresUserAction={false}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          onMessage={(event) => {
+            if (event.nativeEvent.data === 'ended' || event.nativeEvent.data === 'error') {
               handleFinishIntroSplash();
             }
           }}
