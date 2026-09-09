@@ -17,7 +17,6 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { INTRO_VIDEO_DATA } from './introBase64';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -357,10 +356,10 @@ export default function App() {
   };
 
   useEffect(() => {
-    // Safety fallback: maximum 9.5s in case video finishes or fails to autoplay
+    // Safety fallback: maximum 14s in case video finishes or takes a moment to buffer
     const timer = setTimeout(() => {
       handleFinishIntroSplash();
-    }, 9500);
+    }, 14000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -1542,6 +1541,15 @@ export default function App() {
   const renderIntroSplash = () => {
     if (!showIntroSplash) return null;
 
+    let localAssetUri = '';
+    try {
+      const assetSource = Image.resolveAssetSource(require('./assets/intro.mp4'));
+      localAssetUri = assetSource?.uri || '';
+    } catch (e) {}
+
+    const cdnUri = 'https://cdn.jsdelivr.net/gh/Gurucharann275/sportlens@main/assets/intro.mp4';
+    const rawUri = 'https://raw.githubusercontent.com/Gurucharann275/sportlens/main/assets/intro.mp4';
+
     const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -1562,30 +1570,71 @@ export default function App() {
     width: 100vw;
     height: 100vh;
     object-fit: contain;
-    background: #000;
+    background: #000000;
   }
 </style>
 </head>
 <body>
-  <video id="vid" autoplay playsinline webkit-playsinline src="${INTRO_VIDEO_DATA}"></video>
+  <video id="vid" playsinline webkit-playsinline preload="auto"></video>
   <script>
-    var v = document.getElementById('vid');
-    v.onended = function() {
-      if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage('ended');
+    var vid = document.getElementById('vid');
+    var sources = ${JSON.stringify([localAssetUri, cdnUri, rawUri].filter(Boolean))};
+    var currentIndex = 0;
+
+    function post(msg) {
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(msg);
       }
-    };
-    v.onerror = function() {
-      if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage('error');
+    }
+
+    function tryPlay() {
+      vid.muted = false;
+      vid.volume = 1.0;
+      var p = vid.play();
+      if (p !== undefined) {
+        p.catch(function(err) {
+          vid.muted = true;
+          vid.play().catch(function() {});
+          setTimeout(function() {
+            vid.muted = false;
+          }, 200);
+        });
       }
+    }
+
+    function loadSource(idx) {
+      if (idx >= sources.length) {
+        post('ended');
+        return;
+      }
+      vid.src = sources[idx];
+      vid.load();
+      tryPlay();
+    }
+
+    vid.onerror = function() {
+      currentIndex++;
+      loadSource(currentIndex);
     };
-    document.addEventListener('DOMContentLoaded', function() {
-      v.play().catch(function() {
-        v.muted = true;
-        v.play();
-      });
-    });
+
+    vid.onended = function() {
+      post('ended');
+    };
+
+    loadSource(0);
+    window.addEventListener('load', tryPlay);
+
+    // Screen interaction unmute guarantee
+    document.addEventListener('touchstart', function() {
+      vid.muted = false;
+      vid.volume = 1.0;
+      vid.play();
+    }, { passive: true });
+    document.addEventListener('click', function() {
+      vid.muted = false;
+      vid.volume = 1.0;
+      vid.play();
+    }, { passive: true });
   </script>
 </body>
 </html>
@@ -1608,30 +1657,32 @@ export default function App() {
         <StatusBar barStyle="light-content" backgroundColor="#000000" />
         <WebView
           originWhitelist={['*']}
-          source={{ html: htmlContent }}
+          source={{ html: htmlContent, baseUrl: 'https://cdn.jsdelivr.net' }}
           style={{ width: '100%', height: '100%', backgroundColor: '#000000' }}
           allowsInlineMediaPlayback={true}
           mediaPlaybackRequiresUserAction={false}
           javaScriptEnabled={true}
           domStorageEnabled={true}
+          androidLayerType="hardware"
+          mixedContentMode="always"
+          scrollEnabled={false}
           onMessage={(event) => {
-            if (event.nativeEvent.data === 'ended' || event.nativeEvent.data === 'error') {
+            if (event.nativeEvent.data === 'ended') {
               handleFinishIntroSplash();
             }
           }}
-          onError={() => handleFinishIntroSplash()}
         />
 
         {/* Quick Skip button in top right */}
         <SafeAreaView style={{ position: 'absolute', top: 12, right: 16, zIndex: 100000 }}>
           <TouchableOpacity
             style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              backgroundColor: 'rgba(255, 255, 255, 0.18)',
               paddingHorizontal: 14,
               paddingVertical: 7,
               borderRadius: 20,
               borderWidth: 1,
-              borderColor: 'rgba(255, 255, 255, 0.3)',
+              borderColor: 'rgba(255, 255, 255, 0.35)',
             }}
             onPress={handleFinishIntroSplash}
           >
