@@ -1507,12 +1507,9 @@ export default function App() {
     } catch (e) {}
 
     Alert.alert(
-      'Trial Call-Up Issued! 🏛️',
-      `Official Trial Invitation and Digital Pass have been dispatched to ${targetAthlete.name} (${targetAthlete.district}).\n\nThe athlete's app has received this call-up on their Notification Bell!`,
-      [
-        { text: 'Switch to Athlete View to Test', onPress: () => { setAppMode('athlete'); setCurrentTab('recruit'); } },
-        { text: 'Stay in Scout Portal' }
-      ]
+      'Trial Call-Up Dispatched 🏛️',
+      `Official Trial Invitation and Digital Pass have been successfully dispatched to ${targetAthlete.name} (${targetAthlete.district}).`,
+      [{ text: 'OK' }]
     );
   };
 
