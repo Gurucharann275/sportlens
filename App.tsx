@@ -42,6 +42,7 @@ import {
   BiomechanicsResult,
   JumpAnalysisResult,
   AccelSample,
+  OpticalSnapshot,
 } from './biomechanicsEngine';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -363,6 +364,7 @@ export default function App() {
   const accelSamplesRef = useRef<AccelSample[]>([]);
   const cameraRef = useRef<any>(null);
   const recordedVideoUriRef = useRef<string | null>(null);
+  const opticalSnapshotsRef = useRef<OpticalSnapshot[]>([]);
   const [liveAccel, setLiveAccel] = useState({ x: 0.02, y: 0.98, z: 0.14 });
   const scanLaserAnim = useRef(new Animated.Value(0)).current;
 
@@ -1088,6 +1090,22 @@ export default function App() {
         setDrillPhase('recording');
         setRecordDurationSec(0);
 
+        // ── RESET SAMPLES & CAPTURE BASELINE READY STANCE SNAPSHOT ──
+        accelSamplesRef.current = [];
+        opticalSnapshotsRef.current = [];
+        recordedVideoUriRef.current = null;
+
+        if (cameraRef.current && typeof cameraRef.current.takePictureAsync === 'function') {
+          try {
+            cameraRef.current
+              .takePictureAsync({ base64: true, quality: 0.25, skipProcessing: true })
+              .then((snap: any) => {
+                if (snap) opticalSnapshotsRef.current.push(snap);
+              })
+              .catch(() => {});
+          } catch (e) {}
+        }
+
         // ── START REAL VIDEO RECORDING ON CAMERA (CACHE STREAM) ──
         if (cameraRef.current && typeof cameraRef.current.recordAsync === 'function') {
           try {
@@ -1217,14 +1235,17 @@ export default function App() {
       let calibratedList: string[] = [];
       let feedback = '';
 
-      // ── GRAB REAL ACCELEROMETER SAMPLES ──
+      // ── GRAB REAL ACCELEROMETER SAMPLES, VIDEO URI & OPTICAL SNAPSHOTS ──
       const accelSamples = [...accelSamplesRef.current];
       accelSamplesRef.current = [];
+      const videoUri = recordedVideoUriRef.current;
+      const snapshots = [...opticalSnapshotsRef.current];
+      opticalSnapshotsRef.current = [];
 
       let bioResult: BiomechanicsResult;
 
       if (activeDrillCategory === 'jump') {
-        const jumpRes = analyzeVideoJumpKinematics(recordDurationSec, athleteWeight, accelSamples);
+        const jumpRes = analyzeVideoJumpKinematics(recordDurationSec, athleteWeight, accelSamples, videoUri, snapshots);
         bioResult = jumpRes;
 
         if (jumpRes.isValid) {
@@ -1243,7 +1264,7 @@ export default function App() {
           feedback = jumpRes.rejectionReason || 'INVALID ATTEMPT: No genuine vertical jump detected.';
         }
       } else if (activeDrillCategory === 'sprint') {
-        const sprintRes = analyzeVideoSprintKinematics(recordDurationSec, athleteWeight, accelSamples);
+        const sprintRes = analyzeVideoSprintKinematics(recordDurationSec, athleteWeight, accelSamples, videoUri, snapshots);
         bioResult = sprintRes;
 
         if (sprintRes.isValid) {
@@ -1263,7 +1284,7 @@ export default function App() {
           feedback = sprintRes.rejectionReason || 'INVALID ATTEMPT: No genuine sprint movement detected.';
         }
       } else {
-        const squatRes = analyzeVideoSquatKinematics(recordDurationSec, athleteWeight, accelSamples);
+        const squatRes = analyzeVideoSquatKinematics(recordDurationSec, athleteWeight, accelSamples, videoUri, snapshots);
         bioResult = squatRes;
 
         if (squatRes.isValid) {
