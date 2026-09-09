@@ -2744,7 +2744,7 @@ export default function App() {
                   { title: 'Wrestling Core Torque & Bridge', desc: 'WFI explosive hip drive, isometric grip & core torque power.', emoji: '🤼‍♂️', color: '#A855F7', tag: 'Wrestling / Kushti', stats: 'Calibrates: Power, Technique', cat: 'squat' as const },
                   { title: t.squat, desc: '90° knee flexion, balance symmetry & hip depth.', emoji: '🏋️', color: '#FACC15', tag: 'Weightlifting / Strength', stats: 'Calibrates: Technique, Power', cat: 'squat' as const },
                   { title: t.high_knees, desc: 'Max cadence foot strike frequency & cardio engine.', emoji: '⚡', color: '#A855F7', tag: 'Cadence Engine', stats: 'Calibrates: Speed, Stamina', cat: 'sprint' as const },
-                  { title: t.universal_ai, desc: 'Single-shot 33-point AI scanner for all sports & Olympic drills.', emoji: '🌐', color: '#8B5CF6', tag: 'Universal AI Scanner', stats: 'Calibrates: Full Biomechanics', cat: 'jump' as const },
+                  { title: t.universal_ai, desc: 'Multi-modal optical silhouette & hardware IMU scanner for all drills.', emoji: '🌐', color: '#8B5CF6', tag: 'Universal AI Scanner', stats: 'Calibrates: Full Biomechanics', cat: 'jump' as const },
                 ].map((item, idx) => (
                   <TouchableOpacity
                     key={idx}
@@ -3170,10 +3170,10 @@ export default function App() {
                   </View>
                 </View>
 
-                {/* 33-Point Skeleton HUD Video Proof Viewfinder with Interactive Scrubber */}
+                {/* Optical & IMU Kinetic Video Proof Viewfinder with Interactive Scrubber */}
                 <View style={styles.auditVideoBox}>
                   <View style={styles.auditVideoHeader}>
-                    <Text style={{ color: '#C084FC', fontWeight: 'bold', fontSize: 10 }}>📹 33-POINT SKELETON POSE AUDIT (60 FPS)</Text>
+                    <Text style={{ color: '#C084FC', fontWeight: 'bold', fontSize: 10 }}>📹 OPTICAL VIDEO & IMU KINEMATICS AUDIT (60 FPS)</Text>
                     <View style={styles.recDotRow}>
                       <View style={styles.redRecDot} />
                       <Text style={{ color: '#EF4444', fontSize: 9, fontWeight: 'bold' }}>VERIFIED RAW CLIP</Text>

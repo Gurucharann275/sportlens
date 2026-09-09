@@ -34,7 +34,7 @@
 - **Athlete Mode**: Gamified leveling (Grassroots Rookie $\rightarrow$ State Elite), drill logs, live audio coaching, FIFA/NBA-style Physical Passport Card.
 - **SAI Scout & Recruiter Mode**:
   - Filter verified talent by State (28 States + 8 UTs), Sport, OVR rating, and Age.
-  - Frame-by-frame 60 FPS video audit scrubber with 33-point biomechanics breakdown.
+  - Frame-by-frame 60 FPS video audit scrubber with 10-gate multi-modal biomechanics breakdown.
   - Direct 1-Tap Scouting Call-Up dispatch system.
 
 ---
