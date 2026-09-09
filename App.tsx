@@ -1537,7 +1537,7 @@ export default function App() {
     );
   };
 
-  // 🎬 Render Intro Video Splash Overlay (Hardware-Accelerated WebView)
+  // 🎬 Render Intro Video Splash Overlay (Hardware-Accelerated Native/WebView Player)
   const renderIntroSplash = () => {
     if (!showIntroSplash) return null;
 
@@ -1547,8 +1547,8 @@ export default function App() {
       localAssetUri = assetSource?.uri || '';
     } catch (e) {}
 
-    const cdnUri = 'https://cdn.jsdelivr.net/gh/Gurucharann275/sportlens@main/assets/intro.mp4';
-    const rawUri = 'https://raw.githubusercontent.com/Gurucharann275/sportlens/main/assets/intro.mp4';
+    const fastlyUri = 'https://fastly.jsdelivr.net/gh/Gurucharann275/sportlens@main/assets/intro.mp4';
+    const gcoreUri = 'https://gcore.jsdelivr.net/gh/Gurucharann275/sportlens@main/assets/intro.mp4';
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -1556,85 +1556,98 @@ export default function App() {
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; background: #000; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
-    width: 100%;
-    height: 100%;
-    background-color: #000000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
+    width: 100%; height: 100%; background: #000000;
+    display: flex; justify-content: center; align-items: center; overflow: hidden;
+  }
+  #loader {
+    position: absolute; z-index: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px;
+  }
+  .spinner {
+    width: 44px; height: 44px; border: 3px solid rgba(139, 92, 246, 0.2);
+    border-top-color: #8B5CF6; border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .brand-text {
+    color: #C084FC; font-family: sans-serif; font-size: 13px;
+    letter-spacing: 3px; font-weight: 700; text-transform: uppercase;
   }
   video {
-    width: 100vw;
-    height: 100vh;
-    object-fit: contain;
-    background: #000000;
+    width: 100vw; height: 100vh; object-fit: contain; background: #000000;
+    position: absolute; top: 0; left: 0; z-index: 2;
+  }
+  #sound-hint {
+    position: absolute; bottom: 36px; z-index: 10;
+    background: rgba(139, 92, 246, 0.25); border: 1px solid rgba(192, 132, 252, 0.4);
+    padding: 7px 16px; border-radius: 20px; color: #FFF;
+    font-family: sans-serif; font-size: 11px; font-weight: 600;
+    display: none; pointer-events: none;
   }
 </style>
 </head>
 <body>
-  <video id="vid" playsinline webkit-playsinline preload="auto"></video>
+  <div id="loader">
+    <div class="spinner"></div>
+    <div class="brand-text">SPORTLENS</div>
+  </div>
+
+  <video
+    id="vid"
+    src="${fastlyUri}"
+    autoplay
+    playsinline
+    webkit-playsinline
+    preload="auto"
+  >
+    ${localAssetUri ? `<source src="${localAssetUri}" type="video/mp4">` : ''}
+    <source src="${fastlyUri}" type="video/mp4">
+    <source src="${gcoreUri}" type="video/mp4">
+  </video>
+
+  <div id="sound-hint">🔊 Tap screen for audio</div>
+
   <script>
-    var vid = document.getElementById('vid');
-    var sources = ${JSON.stringify([localAssetUri, cdnUri, rawUri].filter(Boolean))};
-    var currentIndex = 0;
+    var v = document.getElementById('vid');
+    var loader = document.getElementById('loader');
+    var hint = document.getElementById('sound-hint');
+    v.volume = 1.0;
 
-    function post(msg) {
-      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-        window.ReactNativeWebView.postMessage(msg);
-      }
-    }
+    v.addEventListener('playing', function() {
+      if (loader) loader.style.display = 'none';
+      if (v.muted && hint) hint.style.display = 'block';
+    });
 
-    function tryPlay() {
-      vid.muted = false;
-      vid.volume = 1.0;
-      var p = vid.play();
+    v.addEventListener('ended', function() {
+      if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage('ended');
+    });
+
+    function tryStart() {
+      var p = v.play();
       if (p !== undefined) {
-        p.catch(function(err) {
-          vid.muted = true;
-          vid.play().catch(function() {});
-          setTimeout(function() {
-            vid.muted = false;
-          }, 200);
+        p.catch(function(e) {
+          // If browser policy requires mute for initial frame, start muted
+          v.muted = true;
+          v.play();
         });
       }
     }
 
-    function loadSource(idx) {
-      if (idx >= sources.length) {
-        post('ended');
-        return;
-      }
-      vid.src = sources[idx];
-      vid.load();
-      tryPlay();
+    document.addEventListener('DOMContentLoaded', tryStart);
+    window.addEventListener('load', tryStart);
+
+    // Unmute on first screen touch
+    function unmuteOnTouch() {
+      v.muted = false;
+      v.volume = 1.0;
+      v.play();
+      if (hint) hint.style.display = 'none';
     }
 
-    vid.onerror = function() {
-      currentIndex++;
-      loadSource(currentIndex);
-    };
-
-    vid.onended = function() {
-      post('ended');
-    };
-
-    loadSource(0);
-    window.addEventListener('load', tryPlay);
-
-    // Screen interaction unmute guarantee
-    document.addEventListener('touchstart', function() {
-      vid.muted = false;
-      vid.volume = 1.0;
-      vid.play();
-    }, { passive: true });
-    document.addEventListener('click', function() {
-      vid.muted = false;
-      vid.volume = 1.0;
-      vid.play();
-    }, { passive: true });
+    document.addEventListener('touchstart', unmuteOnTouch, { passive: true });
+    document.addEventListener('click', unmuteOnTouch, { passive: true });
   </script>
 </body>
 </html>
@@ -1657,7 +1670,7 @@ export default function App() {
         <StatusBar barStyle="light-content" backgroundColor="#000000" />
         <WebView
           originWhitelist={['*']}
-          source={{ html: htmlContent, baseUrl: 'https://cdn.jsdelivr.net' }}
+          source={{ html: htmlContent }}
           style={{ width: '100%', height: '100%', backgroundColor: '#000000' }}
           allowsInlineMediaPlayback={true}
           mediaPlaybackRequiresUserAction={false}
