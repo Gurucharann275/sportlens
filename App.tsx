@@ -342,27 +342,7 @@ export default function App() {
     loadAllAthletesFromStorage();
   }, [appMode]);
 
-  // 🎬 Cinematic Brand Intro Video Splash
-  const [showIntroSplash, setShowIntroSplash] = useState(true);
-  const splashFadeAnim = useRef(new Animated.Value(1)).current;
 
-  const handleFinishIntroSplash = () => {
-    Animated.timing(splashFadeAnim, {
-      toValue: 0,
-      duration: 450,
-      useNativeDriver: true,
-    }).start(() => {
-      setShowIntroSplash(false);
-    });
-  };
-
-  useEffect(() => {
-    // Safety fallback: maximum 14s in case video finishes or takes a moment to buffer
-    const timer = setTimeout(() => {
-      handleFinishIntroSplash();
-    }, 14000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const [auditScrubPhase, setAuditScrubPhase] = useState<'load' | 'takeoff' | 'apex' | 'landing'>('apex');
   const [auditCompareMode, setAuditCompareMode] = useState<'sai_national' | 'district_avg'>('sai_national');
@@ -1564,181 +1544,11 @@ export default function App() {
     );
   };
 
-  // 🎬 Render Intro Video Splash Overlay (Hardware-Accelerated Native/WebView Player)
-  const renderIntroSplash = () => {
-    if (!showIntroSplash) return null;
-
-    let localAssetUri = '';
-    try {
-      const assetSource = Image.resolveAssetSource(require('./assets/intro.mp4'));
-      localAssetUri = assetSource?.uri || '';
-    } catch (e) {}
-
-    const fastlyUri = 'https://fastly.jsdelivr.net/gh/Gurucharann275/sportlens@main/assets/intro.mp4';
-    const gcoreUri = 'https://gcore.jsdelivr.net/gh/Gurucharann275/sportlens@main/assets/intro.mp4';
-
-    const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body {
-    width: 100%; height: 100%; background: #000000;
-    display: flex; justify-content: center; align-items: center; overflow: hidden;
-  }
-  #loader {
-    position: absolute; z-index: 1; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 14px;
-  }
-  .spinner {
-    width: 44px; height: 44px; border: 3px solid rgba(139, 92, 246, 0.2);
-    border-top-color: #8B5CF6; border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .brand-text {
-    color: #C084FC; font-family: sans-serif; font-size: 13px;
-    letter-spacing: 3px; font-weight: 700; text-transform: uppercase;
-  }
-  video {
-    width: 100vw; height: 100vh; object-fit: contain; background: #000000;
-    position: absolute; top: 0; left: 0; z-index: 2;
-  }
-  #sound-hint {
-    position: absolute; bottom: 36px; z-index: 10;
-    background: rgba(139, 92, 246, 0.25); border: 1px solid rgba(192, 132, 252, 0.4);
-    padding: 7px 16px; border-radius: 20px; color: #FFF;
-    font-family: sans-serif; font-size: 11px; font-weight: 600;
-    display: none; pointer-events: none;
-  }
-</style>
-</head>
-<body>
-  <div id="loader">
-    <div class="spinner"></div>
-    <div class="brand-text">SPORTLENS</div>
-  </div>
-
-  <video
-    id="vid"
-    src="${fastlyUri}"
-    autoplay
-    playsinline
-    webkit-playsinline
-    preload="auto"
-  >
-    ${localAssetUri ? `<source src="${localAssetUri}" type="video/mp4">` : ''}
-    <source src="${fastlyUri}" type="video/mp4">
-    <source src="${gcoreUri}" type="video/mp4">
-  </video>
-
-  <div id="sound-hint">🔊 Tap screen for audio</div>
-
-  <script>
-    var v = document.getElementById('vid');
-    var loader = document.getElementById('loader');
-    var hint = document.getElementById('sound-hint');
-    v.volume = 1.0;
-
-    v.addEventListener('playing', function() {
-      if (loader) loader.style.display = 'none';
-      if (v.muted && hint) hint.style.display = 'block';
-    });
-
-    v.addEventListener('ended', function() {
-      if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage('ended');
-    });
-
-    function tryStart() {
-      var p = v.play();
-      if (p !== undefined) {
-        p.catch(function(e) {
-          // If browser policy requires mute for initial frame, start muted
-          v.muted = true;
-          v.play();
-        });
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', tryStart);
-    window.addEventListener('load', tryStart);
-
-    // Unmute on first screen touch
-    function unmuteOnTouch() {
-      v.muted = false;
-      v.volume = 1.0;
-      v.play();
-      if (hint) hint.style.display = 'none';
-    }
-
-    document.addEventListener('touchstart', unmuteOnTouch, { passive: true });
-    document.addEventListener('click', unmuteOnTouch, { passive: true });
-  </script>
-</body>
-</html>
-    `;
-
-    return (
-      <Animated.View
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            backgroundColor: '#000000',
-            zIndex: 99999,
-            elevation: 99999,
-            opacity: splashFadeAnim,
-            justifyContent: 'center',
-            alignItems: 'center',
-          },
-        ]}
-      >
-        <StatusBar barStyle="light-content" backgroundColor="#000000" />
-        <WebView
-          originWhitelist={['*']}
-          source={{ html: htmlContent }}
-          style={{ width: '100%', height: '100%', backgroundColor: '#000000' }}
-          allowsInlineMediaPlayback={true}
-          mediaPlaybackRequiresUserAction={false}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          androidLayerType="hardware"
-          mixedContentMode="always"
-          scrollEnabled={false}
-          onMessage={(event) => {
-            if (event.nativeEvent.data === 'ended') {
-              handleFinishIntroSplash();
-            }
-          }}
-        />
-
-        {/* Quick Skip button in top right */}
-        <SafeAreaView style={{ position: 'absolute', top: 12, right: 16, zIndex: 100000 }}>
-          <TouchableOpacity
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.18)',
-              paddingHorizontal: 14,
-              paddingVertical: 7,
-              borderRadius: 20,
-              borderWidth: 1,
-              borderColor: 'rgba(255, 255, 255, 0.35)',
-            }}
-            onPress={handleFinishIntroSplash}
-          >
-            <Text style={{ color: '#FFF', fontSize: 11, fontWeight: 'bold' }}>Skip ❯</Text>
-          </TouchableOpacity>
-        </SafeAreaView>
-      </Animated.View>
-    );
-  };
-
   // ================= VIEW: AUTHENTICATION FLOW =================
   if (!isLoggedIn) {
     return (
       <SafeAreaView style={styles.safeContainer}>
         <StatusBar barStyle="light-content" backgroundColor="#090514" />
-        {renderIntroSplash()}
 
         <ScrollView style={styles.scrollFlex} contentContainerStyle={styles.loginContent}>
           <View style={styles.loginBrand}>
@@ -2258,7 +2068,6 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#090514" />
-      {renderIntroSplash()}
 
       {/* TOP HEADER: DUAL-MODE SWITCHER (ATHLETE ⇄ SAI SCOUT) */}
       <View style={styles.headerBar}>
