@@ -252,6 +252,13 @@ export default function App() {
     }
   }, [isCameraModalOpen, cameraPermission]);
 
+  // Permanently stop and silence any speech/audio output
+  useEffect(() => {
+    try {
+      Speech.stop();
+    } catch (e) {}
+  }, []);
+
   // Active Athlete Profile
   const [athlete, setAthlete] = useState({
     name: 'Charan',
@@ -412,21 +419,12 @@ export default function App() {
   const t = I18N[language] || I18N.en;
   const currentLangObj = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
 
-  // Vernacular Speech Engine
-  const speakFeedback = (customText?: string, overrideSpeechCode?: string) => {
-    const textToSpeak = customText || t.coach_voice_text;
+  // Speech Engine - Permanently silenced per user directive (No audio output)
+  const speakFeedback = (_customText?: string, _overrideSpeechCode?: string) => {
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Speech.stop();
     } catch (e) {}
-
-    setIsSpeaking(true);
-    Speech.speak(textToSpeak, {
-      language: overrideSpeechCode || currentLangObj.speechCode,
-      rate: 0.95,
-      pitch: 1.05,
-      onDone: () => setIsSpeaking(false),
-      onError: () => setIsSpeaking(false),
-    });
+    setIsSpeaking(false);
   };
 
   // 0. Recruiter Login & Registration Handlers with STRICT EXCLUSIVE SECURITY LOCKDOWN
@@ -696,7 +694,6 @@ export default function App() {
       setAthlete(validateAndSyncStreakIST(ownerProfile));
       setAppMode('athlete');
       setIsLoggedIn(true);
-      speakFeedback('Welcome back, Charan!');
       Alert.alert('Welcome Back, Charan! 👑👽', 'Exclusive Master Account Recognized & Authenticated.');
       return;
     }
@@ -1067,8 +1064,6 @@ export default function App() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     } catch (e) {}
 
-    speakFeedback('3', 'en-IN');
-
     let count = 3;
     countdownTimerRef.current = setInterval(() => {
       count -= 1;
@@ -1077,7 +1072,6 @@ export default function App() {
         try {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         } catch (e) {}
-        speakFeedback(`${count}`, 'en-IN');
       } else {
         // COUNTDOWN FINISHED -> RECORDING STARTS IMMEDIATELY!
         if (countdownTimerRef.current) {
@@ -1088,7 +1082,6 @@ export default function App() {
         try {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (e) {}
-        speakFeedback('Go!', 'en-IN');
 
         setDrillPhase('recording');
         setRecordDurationSec(0);
@@ -1243,9 +1236,6 @@ export default function App() {
       try {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       } catch (e) {}
-
-      const shortVoice = getLocalizedShortRecording(language);
-      speakFeedback(shortVoice);
 
       Alert.alert(
         '⚠️ Recording Too Short',
@@ -1437,7 +1427,6 @@ export default function App() {
       setDrillPhase('standby');
       setRecordDurationSec(0);
       setIsReportModalOpen(true);
-      speakFeedback(feedback);
 
       try {
         if (bioResult.isValid) {
@@ -2109,7 +2098,6 @@ export default function App() {
                     onPress={() => {
                       setLanguage(l.code);
                       setIsLangModalOpen(false);
-                      speakFeedback(NATIVE_WELCOMES[l.code] || `${l.name} selected`, l.speechCode);
                     }}
                   >
                     <Text style={styles.langRowNative}>{l.native}</Text>
@@ -3639,7 +3627,6 @@ export default function App() {
                     onPress={() => {
                       setLanguage(l.code);
                       setIsLangModalOpen(false);
-                      speakFeedback(NATIVE_WELCOMES[l.code] || `${l.name} selected`, l.speechCode);
                     }}
                   >
                     <Text style={styles.langRowNative}>{l.native}</Text>
