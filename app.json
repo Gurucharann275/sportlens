@@ -36,7 +36,8 @@
     "plugins": [
       "expo-asset",
       "expo-font",
-      "expo-video"
+      "expo-video",
+      "expo-sharing"
     ]
   }
 }

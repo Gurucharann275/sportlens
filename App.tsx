@@ -22,6 +22,8 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
+import ViewShot, { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Accelerometer } from 'expo-sensors';
 import { WebView } from 'react-native-webview';
@@ -379,6 +381,8 @@ export default function App() {
   const frameCaptureTimeoutRef = useRef<any>(null);
   const [liveAccel, setLiveAccel] = useState({ x: 0.02, y: 0.98, z: 0.14 });
   const scanLaserAnim = useRef(new Animated.Value(0)).current;
+  const [isSharingCard, setIsSharingCard] = useState(false);
+  const cardShotRef = useRef<any>(null);
 
 
   // ================= RECRUITER POV STATE & 4-TIER VERIFICATION SYSTEM =================
@@ -915,9 +919,32 @@ export default function App() {
     }
   };
 
-  // 📲 Real Native OS Share Sheet for Physical Passport Card
+  // 📲 Real Native OS Share Sheet for Physical Passport Card (Shares Card as Photo)
   const handleSharePassportCard = async () => {
     try {
+      setIsSharingCard(true);
+      let photoUri: string | null = null;
+
+      if (cardShotRef.current?.capture) {
+        photoUri = await cardShotRef.current.capture();
+      } else if (cardShotRef.current) {
+        photoUri = await captureRef(cardShotRef, { format: 'png', quality: 1.0 });
+      }
+
+      if (photoUri) {
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(photoUri, {
+            mimeType: 'image/png',
+            dialogTitle: `${athlete.name || 'Athlete'}'s SportLens Passport`,
+            UTI: 'public.png',
+          });
+          setIsSharingCard(false);
+          return;
+        }
+      }
+
+      // Fallback: text summary if image sharing is unavailable
       const jumpStr = athlete.rawUnits?.jump || (athlete.stats?.jump ? `${athlete.stats.jump} cm` : 'Uncalibrated');
       const powerStr = athlete.rawUnits?.power || (athlete.stats?.power ? `${athlete.stats.power} W` : 'Uncalibrated');
       const speedStr = athlete.rawUnits?.speed || (athlete.stats?.speed ? `${athlete.stats.speed} m/s` : 'Uncalibrated');
@@ -948,6 +975,8 @@ export default function App() {
       });
     } catch (e: any) {
       Alert.alert('Share', e?.message || 'Could not open share menu');
+    } finally {
+      setIsSharingCard(false);
     }
   };
 
@@ -2570,11 +2599,8 @@ export default function App() {
                       <Text style={{ fontSize: 18 }}>{(athlete.streakDays || 0) > 0 ? '🔥' : '⏳'}</Text>
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 13 }}>{athlete.streakDays || 0} {t.streak_suffix || 'Day Streak'}</Text>
-                        <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.15)', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4, borderWidth: 0.5, borderColor: '#8B5CF6' }}>
-                          <Text style={{ color: '#8B5CF6', fontSize: 7.5, fontWeight: '900' }}>🇮🇳 IST</Text>
-                        </View>
                       </View>
                       <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: (athlete.streakDays || 0) > 0 ? (athlete.lastActiveDateIST === getISTDateString() ? '#8B5CF6' : '#F97316') : '#94A3B8', fontSize: 9.5, fontWeight: 'bold' }}>
                         {(athlete.streakDays || 0) > 0
@@ -2825,92 +2851,102 @@ export default function App() {
             <View style={{ gap: 14 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={styles.pageTitle}>{t.player_card_title}</Text>
-                <TouchableOpacity onPress={handleSharePassportCard}>
-                  <Ionicons name="share-social" color="#8B5CF6" size={20} />
+                <TouchableOpacity onPress={handleSharePassportCard} disabled={isSharingCard}>
+                  {isSharingCard ? (
+                    <ActivityIndicator color="#8B5CF6" size="small" />
+                  ) : (
+                    <Ionicons name="share-social" color="#8B5CF6" size={20} />
+                  )}
                 </TouchableOpacity>
               </View>
 
               {/* Holographic Gold Card with FIFA/NBA 2K Ultimate Team Aesthetic */}
-              <LinearGradient
-                colors={['#FFE066', '#D4AF37', '#85540D', '#D4AF37', '#FFE066']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[styles.goldCardWrap, { borderWidth: 2, borderColor: '#FDE047', elevation: 8 }]}
+              <ViewShot
+                ref={cardShotRef}
+                options={{ format: 'png', quality: 1.0 }}
+                style={{ borderRadius: 24, overflow: 'hidden', backgroundColor: '#090514' }}
               >
-                <View style={[styles.goldCardBody, { backgroundColor: '#090514' }]}>
-                  {/* Card Header: Tier Badge & OVR */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <View style={{ gap: 2 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-                        <Text style={[styles.ovrNumber, { color: '#FDE047', fontSize: 42 }]}>
-                          {athlete.ovr === 0 ? '—' : athlete.ovr}
-                        </Text>
-                        <Text style={{ color: '#FDE047', fontWeight: '900', fontSize: 14 }}>OVR</Text>
+                <LinearGradient
+                  colors={['#FFE066', '#D4AF37', '#85540D', '#D4AF37', '#FFE066']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[styles.goldCardWrap, { borderWidth: 2, borderColor: '#FDE047', elevation: 8 }]}
+                >
+                  <View style={[styles.goldCardBody, { backgroundColor: '#090514' }]}>
+                    {/* Card Header: Tier Badge & OVR */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <View style={{ gap: 2 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+                          <Text style={[styles.ovrNumber, { color: '#FDE047', fontSize: 42 }]}>
+                            {athlete.ovr === 0 ? '—' : athlete.ovr}
+                          </Text>
+                          <Text style={{ color: '#FDE047', fontWeight: '900', fontSize: 14 }}>OVR</Text>
+                        </View>
+
+                        <View style={[styles.athPill, { backgroundColor: 'rgba(250,204,21,0.2)', borderColor: '#FACC15', borderWidth: 1 }]}>
+                          <Text style={[styles.athPillText, { color: '#FACC15', fontWeight: '900' }]}>
+                            {athlete.ovr >= 85 ? '👑 SAI NATIONAL ELITE' : athlete.ovr >= 75 ? '🥇 STATE GOLD TIER' : athlete.ovr >= 60 ? '🥈 DISTRICT SILVER' : '🌱 GRASSROOTS'}
+                          </Text>
+                        </View>
                       </View>
 
-                      <View style={[styles.athPill, { backgroundColor: 'rgba(250,204,21,0.2)', borderColor: '#FACC15', borderWidth: 1 }]}>
-                        <Text style={[styles.athPillText, { color: '#FACC15', fontWeight: '900' }]}>
-                          {athlete.ovr >= 85 ? '👑 SAI NATIONAL ELITE' : athlete.ovr >= 75 ? '🥇 STATE GOLD TIER' : athlete.ovr >= 60 ? '🥈 DISTRICT SILVER' : '🌱 GRASSROOTS'}
-                        </Text>
+                      <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                        <View style={styles.indianFlag}>
+                          <View style={{ height: 4, backgroundColor: '#FF9933' }} />
+                          <View style={{ height: 4, backgroundColor: '#FFFFFF' }} />
+                          <View style={{ height: 4, backgroundColor: '#128807' }} />
+                        </View>
+
+                        <View style={{ backgroundColor: '#1E103C', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: '#C084FC' }}>
+                          <Text style={{ color: '#C084FC', fontSize: 9, fontWeight: '900' }}>
+                            🛡️ SAI VERIFIED
+                          </Text>
+                        </View>
                       </View>
                     </View>
 
-                    <View style={{ alignItems: 'flex-end', gap: 6 }}>
-                      <View style={styles.indianFlag}>
-                        <View style={{ height: 4, backgroundColor: '#FF9933' }} />
-                        <View style={{ height: 4, backgroundColor: '#FFFFFF' }} />
-                        <View style={{ height: 4, backgroundColor: '#128807' }} />
-                      </View>
+                    {/* Photo / Silhouette */}
+                    <View style={styles.athleteAvatarBox}>
+                      {athlete.avatar ? (
+                        <Image
+                          source={{ uri: athlete.avatar }}
+                          style={styles.athleteAvatarImg}
+                        />
+                      ) : (
+                        <View style={styles.athleteDefaultSilhouetteGold}>
+                          <Ionicons name="person" color="#94A3B8" size={38} />
+                        </View>
+                      )}
+                    </View>
 
-                      <View style={{ backgroundColor: '#1E103C', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: '#C084FC' }}>
-                        <Text style={{ color: '#C084FC', fontSize: 9, fontWeight: '900' }}>
-                          🛡️ SAI VERIFIED
-                        </Text>
-                      </View>
+                    <Text style={[styles.cardName, { color: '#FFF', letterSpacing: 1 }]}>{(athlete.name || 'CHARAN').toUpperCase()}</Text>
+                    <Text style={styles.cardLoc}>📍 {athlete.district || 'Eluru'}, {athlete.state || 'Andhra Pradesh'} • {(athlete.primarySport || 'VOLLEYBALL').toUpperCase()}</Text>
+
+                    {/* 6 Attribute Bars with EXACT REAL-WORLD PHYSICAL UNITS */}
+                    <View style={styles.statBarsList}>
+                      {[
+                        { label: t.jump, val: athlete.stats.jump, unit: athlete.rawUnits?.jump || '—', color: '#8B5CF6' },
+                        { label: t.power, val: athlete.stats.power, unit: athlete.rawUnits?.power || '—', color: '#FACC15' },
+                        { label: t.speed, val: athlete.stats.speed, unit: athlete.rawUnits?.speed || '—', color: '#C084FC' },
+                        { label: t.agility, val: athlete.stats.agility, unit: athlete.rawUnits?.agility || '—', color: '#8B5CF6' },
+                        { label: t.stamina, val: athlete.stats.stamina, unit: athlete.rawUnits?.stamina || '—', color: '#A855F7' },
+                        { label: t.technique, val: athlete.stats.technique, unit: athlete.rawUnits?.technique || '—', color: '#C084FC' },
+                      ].map((st, i) => (
+                        <View key={i} style={styles.singleStatRowPrecise}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={styles.statLabelText}>{st.label}</Text>
+                            <Text style={styles.statUnitText}>{st.val > 0 ? st.unit : 'Uncalibrated'}</Text>
+                            <Text style={[styles.statValText, st.val === 0 && { color: '#64748B' }]}>{st.val}</Text>
+                          </View>
+                          <View style={styles.statBarTrack}>
+                            <View style={[styles.statBarProgress, { width: `${st.val}%`, backgroundColor: st.color }]} />
+                          </View>
+                        </View>
+                      ))}
                     </View>
                   </View>
-
-                  {/* Photo / Silhouette */}
-                  <View style={styles.athleteAvatarBox}>
-                    {athlete.avatar ? (
-                      <Image
-                        source={{ uri: athlete.avatar }}
-                        style={styles.athleteAvatarImg}
-                      />
-                    ) : (
-                      <View style={styles.athleteDefaultSilhouetteGold}>
-                        <Ionicons name="person" color="#94A3B8" size={38} />
-                      </View>
-                    )}
-                  </View>
-
-                  <Text style={[styles.cardName, { color: '#FFF', letterSpacing: 1 }]}>{(athlete.name || 'CHARAN').toUpperCase()}</Text>
-                  <Text style={styles.cardLoc}>📍 {athlete.district || 'Eluru'}, {athlete.state || 'Andhra Pradesh'} • {(athlete.primarySport || 'VOLLEYBALL').toUpperCase()}</Text>
-
-                  {/* 6 Attribute Bars with EXACT REAL-WORLD PHYSICAL UNITS */}
-                  <View style={styles.statBarsList}>
-                    {[
-                      { label: t.jump, val: athlete.stats.jump, unit: athlete.rawUnits?.jump || '—', color: '#8B5CF6' },
-                      { label: t.power, val: athlete.stats.power, unit: athlete.rawUnits?.power || '—', color: '#FACC15' },
-                      { label: t.speed, val: athlete.stats.speed, unit: athlete.rawUnits?.speed || '—', color: '#C084FC' },
-                      { label: t.agility, val: athlete.stats.agility, unit: athlete.rawUnits?.agility || '—', color: '#8B5CF6' },
-                      { label: t.stamina, val: athlete.stats.stamina, unit: athlete.rawUnits?.stamina || '—', color: '#A855F7' },
-                      { label: t.technique, val: athlete.stats.technique, unit: athlete.rawUnits?.technique || '—', color: '#C084FC' },
-                    ].map((st, i) => (
-                      <View key={i} style={styles.singleStatRowPrecise}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Text style={styles.statLabelText}>{st.label}</Text>
-                          <Text style={styles.statUnitText}>{st.val > 0 ? st.unit : 'Uncalibrated'}</Text>
-                          <Text style={[styles.statValText, st.val === 0 && { color: '#64748B' }]}>{st.val}</Text>
-                        </View>
-                        <View style={styles.statBarTrack}>
-                          <View style={[styles.statBarProgress, { width: `${st.val}%`, backgroundColor: st.color }]} />
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              </LinearGradient>
+                </LinearGradient>
+              </ViewShot>
 
               {/* 6-Axis Biomechanics Radar Matrix Visualizer */}
               <View style={styles.radarCard}>
@@ -2953,9 +2989,16 @@ export default function App() {
               <TouchableOpacity
                 style={[styles.primaryBtn, { backgroundColor: '#FDE047' }]}
                 onPress={handleSharePassportCard}
+                disabled={isSharingCard}
               >
-                <Ionicons name="share-social" color="#000" size={16} />
-                <Text style={[styles.primaryBtnText, { color: '#000' }]}>{t.share_card}</Text>
+                {isSharingCard ? (
+                  <ActivityIndicator color="#000" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="share-social" color="#000" size={16} />
+                    <Text style={[styles.primaryBtnText, { color: '#000' }]}>{t.share_card}</Text>
+                  </>
+                )}
               </TouchableOpacity>
 
               {athlete.ovr > 0 && (
