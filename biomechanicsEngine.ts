@@ -16,6 +16,8 @@ import {
   VisionAnalysisResult,
   DecodedFrame,
 } from './computerVisionEngine';
+import { analyzeSprintKinematics } from './sprintEngine';
+import { analyzeSquatKinematics } from './squatEngine';
 
 export type { OpticalSnapshot, VisionAnalysisResult, Mp4Kinematics };
 
@@ -57,11 +59,12 @@ export interface JumpAnalysisResult {
 export interface SprintAnalysisResult {
   isValid: boolean;
   drillCategory: 'sprint';
-  topSpeedMps: number;
-  split30mSec: number;
-  stepCadenceSpm: number;
-  lateralSwitchSec: number;
-  paceConsistencyPercent: number;
+  topSpeedMps: number | null;
+  split30mSec: number | null;
+  stepCadenceSpm: number | null;
+  transitDurationSec?: number | null;
+  lateralSwitchSec?: number;
+  paceConsistencyPercent?: number;
   speedScore: number;
   agilityScore: number;
   staminaScore: number;
@@ -73,10 +76,12 @@ export interface SprintAnalysisResult {
 export interface SquatAnalysisResult {
   isValid: boolean;
   drillCategory: 'squat';
-  kneeFlexionDeg: number;
-  valgusStabilityDeg: number;
-  symmetryIndexPercent: number;
+  kneeFlexionDeg?: number;
+  maxDepthCompressionPercent?: number;
+  valgusStabilityDeg: number | null;
+  symmetryIndexPercent?: number;
   repetitionCount: number;
+  meanRepDurationSec?: number | null;
   techniqueScore: number;
   powerScore: number;
   score: number;
@@ -415,67 +420,20 @@ export function analyzeVideoSprintKinematics(
   videoUri: string | null = null,
   snapshots: OpticalSnapshot[] = []
 ): SprintAnalysisResult {
-  const vision = analyzeOpticalCapture(videoUri, durationSec, athleteWeightKg, accelSamples, snapshots, 'sprint');
-
-  const gates = buildTenGates({
-    drillCategory: 'sprint',
-    durationSec,
-    athleteDetected: vision.athleteDetected,
-    athleteDetectedReason: vision.athleteDetectedReason,
-    keypointsVisible: vision.fullBodyPoseDetected,
-    keypointsReason: vision.keypointsReason,
-    staysInRegion: vision.staysInRegion,
-    staysInRegionReason: vision.staysInRegionReason,
-    cameraStable: vision.cameraStable,
-    cameraStableReason: vision.cameraStableReason,
-    startingPostureCorrect: vision.startingPostureValid,
-    startingPostureReason: vision.startingPostureReason,
-    movementDetected: vision.movementDetected,
-    movementReason: vision.movementReason,
-    exerciseEventsDetected: vision.exerciseEventsDetected,
-    exerciseEventsReason: vision.exerciseEventsReason,
-    imuAgrees: vision.imuAgrees,
-    imuAgreesReason: vision.imuAgreesReason,
-    confidenceThresholdPassed: vision.confidenceThresholdPassed,
-    confidenceReason: vision.confidenceReason,
-    metricCalculated: vision.metricCalculated,
-  });
-
-  if (!vision.metricCalculated) {
-    return {
-      isValid: false,
-      drillCategory: 'sprint',
-      topSpeedMps: 0,
-      split30mSec: 0,
-      stepCadenceSpm: 0,
-      lateralSwitchSec: 0,
-      paceConsistencyPercent: 0,
-      speedScore: 0,
-      agilityScore: 0,
-      staminaScore: 0,
-      score: 0,
-      rejectionReason: vision.rejectionReason || 'INVALID ATTEMPT: No sprint drive detected. Zero fake numbers awarded.',
-      gates,
-    };
-  }
-
-  const speedScore = vision.score;
-  const agilityScore = Math.min(99, Math.max(45, speedScore - 2));
-  const staminaScore = Math.min(99, Math.max(45, speedScore + 1));
-
+  const sprint = analyzeSprintKinematics(durationSec, athleteWeightKg, accelSamples, videoUri, snapshots);
   return {
-    isValid: true,
+    isValid: sprint.isValid,
     drillCategory: 'sprint',
-    topSpeedMps: vision.topSpeedMps,
-    split30mSec: vision.split30mSec,
-    stepCadenceSpm: vision.cadenceSpm,
-    lateralSwitchSec: Number((12 / Math.max(1, vision.cadenceSpm)).toFixed(2)),
-    paceConsistencyPercent: Number(Math.min(99, Math.max(75, 88 + (speedScore % 10))).toFixed(1)),
-    speedScore,
-    agilityScore,
-    staminaScore,
-    score: speedScore,
-    gates,
+    topSpeedMps: sprint.topSpeedMps,
+    split30mSec: sprint.split30mSec,
+    stepCadenceSpm: sprint.stepCadenceSpm,
+    transitDurationSec: sprint.transitDurationSec,
+    speedScore: sprint.score,
+    agilityScore: sprint.score,
+    staminaScore: sprint.score,
+    score: sprint.score,
+    rejectionReason: sprint.rejectionReason,
+    gates: sprint.gates as BiomechanicsGate[],
   };
 }
 
@@ -491,62 +449,18 @@ export function analyzeVideoSquatKinematics(
   videoUri: string | null = null,
   snapshots: OpticalSnapshot[] = []
 ): SquatAnalysisResult {
-  const vision = analyzeOpticalCapture(videoUri, durationSec, athleteWeightKg, accelSamples, snapshots, 'squat');
-
-  const gates = buildTenGates({
-    drillCategory: 'squat',
-    durationSec,
-    athleteDetected: vision.athleteDetected,
-    athleteDetectedReason: vision.athleteDetectedReason,
-    keypointsVisible: vision.fullBodyPoseDetected,
-    keypointsReason: vision.keypointsReason,
-    staysInRegion: vision.staysInRegion,
-    staysInRegionReason: vision.staysInRegionReason,
-    cameraStable: vision.cameraStable,
-    cameraStableReason: vision.cameraStableReason,
-    startingPostureCorrect: vision.startingPostureValid,
-    startingPostureReason: vision.startingPostureReason,
-    movementDetected: vision.movementDetected,
-    movementReason: vision.movementReason,
-    exerciseEventsDetected: vision.exerciseEventsDetected,
-    exerciseEventsReason: vision.exerciseEventsReason,
-    imuAgrees: vision.imuAgrees,
-    imuAgreesReason: vision.imuAgreesReason,
-    confidenceThresholdPassed: vision.confidenceThresholdPassed,
-    confidenceReason: vision.confidenceReason,
-    metricCalculated: vision.metricCalculated,
-  });
-
-  if (!vision.metricCalculated) {
-    return {
-      isValid: false,
-      drillCategory: 'squat',
-      kneeFlexionDeg: 0,
-      valgusStabilityDeg: 0,
-      symmetryIndexPercent: 0,
-      repetitionCount: 0,
-      techniqueScore: 0,
-      powerScore: 0,
-      score: 0,
-      rejectionReason: vision.rejectionReason || 'INVALID ATTEMPT: No squat knee flexion detected. Zero fake numbers awarded.',
-      gates,
-    };
-  }
-
-  const depthPenalty = Math.abs(vision.kneeFlexionDeg - 90) * 1.5;
-  const techniqueScore = Math.min(99, Math.max(45, Math.round(94 - depthPenalty)));
-  const powerScore = Math.min(99, Math.max(45, Math.round(vision.score)));
-
+  const squat = analyzeSquatKinematics(durationSec, athleteWeightKg, accelSamples, videoUri, snapshots);
   return {
-    isValid: true,
+    isValid: squat.isValid,
     drillCategory: 'squat',
-    kneeFlexionDeg: vision.kneeFlexionDeg,
-    valgusStabilityDeg: vision.valgusStabilityDeg,
-    symmetryIndexPercent: Number(Math.min(99, Math.max(80, 100 - vision.valgusStabilityDeg * 2.5)).toFixed(1)),
-    repetitionCount: vision.squatRepetitions,
-    techniqueScore,
-    powerScore,
-    score: vision.score,
-    gates,
+    maxDepthCompressionPercent: squat.maxDepthCompressionPercent,
+    valgusStabilityDeg: squat.valgusStabilityDeg,
+    repetitionCount: squat.repetitionCount,
+    meanRepDurationSec: squat.meanRepDurationSec,
+    techniqueScore: squat.techniqueScore,
+    powerScore: squat.score,
+    score: squat.score,
+    rejectionReason: squat.rejectionReason,
+    gates: squat.gates as BiomechanicsGate[],
   };
 }

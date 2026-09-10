@@ -41,6 +41,8 @@ import {
   calculateSayersPeakPower,
   BiomechanicsResult,
   JumpAnalysisResult,
+  SprintAnalysisResult,
+  SquatAnalysisResult,
   AccelSample,
   OpticalSnapshot,
 } from './biomechanicsEngine';
@@ -1340,13 +1342,21 @@ export default function App() {
           newStats.speed = sprintRes.speedScore;
           newStats.agility = sprintRes.agilityScore;
           newStats.stamina = sprintRes.staminaScore;
-          newUnits.speed = `${sprintRes.topSpeedMps} m/s • ${sprintRes.split30mSec}s 30m Gate`;
-          newUnits.agility = `${sprintRes.lateralSwitchSec}s Lateral Switch`;
-          newUnits.stamina = `${sprintRes.paceConsistencyPercent}% Pace Consistency`;
+          newUnits.speed = sprintRes.stepCadenceSpm !== null
+            ? `${sprintRes.stepCadenceSpm} SPM Cadence`
+            : sprintRes.transitDurationSec !== null
+            ? `${sprintRes.transitDurationSec}s Transit`
+            : 'Sprint Verified';
+          newUnits.agility = sprintRes.stepCadenceSpm !== null
+            ? `${sprintRes.stepCadenceSpm} SPM Footwork`
+            : 'Track Distance Required';
+          newUnits.stamina = 'SAI Cadence Standard';
 
           score = sprintRes.score;
           calibratedList = ['SPEED', 'AGILITY', 'STAMINA'];
-          feedback = getLocalizedSprintFeedback(sprintRes.topSpeedMps, sprintRes.split30mSec, language);
+          feedback = sprintRes.stepCadenceSpm !== null
+            ? `SAI Stride Cadence Verified: ${sprintRes.stepCadenceSpm} SPM. Spatial speed (m/s) requires calibrated track markers.`
+            : `Runway Transit Verified: ${sprintRes.transitDurationSec}s. Spatial speed (m/s) requires calibrated track markers.`;
         } else {
           score = 0;
           calibratedList = [];
@@ -1359,11 +1369,12 @@ export default function App() {
         if (squatRes.isValid) {
           newStats.technique = squatRes.techniqueScore;
           newStats.power = Math.max(newStats.power, squatRes.powerScore);
-          newUnits.technique = `${squatRes.kneeFlexionDeg}° Flexion • ${squatRes.valgusStabilityDeg}° Valgus`;
+          newUnits.technique = `${squatRes.repetitionCount} Reps • ${squatRes.maxDepthCompressionPercent}% Depth`;
+          newUnits.power = `${squatRes.score}/100 Strength`;
 
           score = squatRes.score;
           calibratedList = ['TECHNIQUE', 'POWER'];
-          feedback = getLocalizedSquatFeedback(squatRes.kneeFlexionDeg, squatRes.valgusStabilityDeg, language);
+          feedback = `Squat Repetitions Verified: ${squatRes.repetitionCount} completed reps with ${squatRes.maxDepthCompressionPercent}% depth compression.`;
         } else {
           score = 0;
           calibratedList = [];
@@ -4100,6 +4111,102 @@ export default function App() {
                           </Text>
                         </TouchableOpacity>
                       ))}
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* Verified Sprint Cadence & Transit Card (ONLY shown if valid sprint) */}
+              {latestBiomechanicsResult && latestBiomechanicsResult.isValid && latestBiomechanicsResult.drillCategory === 'sprint' && (
+                <View style={{ backgroundColor: '#1E103C', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: '#2E1854', gap: 8 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 11.5 }}>🏃 SPRINT CADENCE & RUNWAY TELEMETRY</Text>
+                    <View style={{ backgroundColor: 'rgba(192, 132, 252, 0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                      <Text style={{ color: '#C084FC', fontSize: 8.5, fontWeight: 'bold' }}>SAI SPRINT STANDARD</Text>
+                    </View>
+                  </View>
+
+                  <View style={{ backgroundColor: '#130924', borderRadius: 10, padding: 8, borderWidth: 1, borderColor: '#2E1854' }}>
+                    <Text style={{ color: '#C084FC', fontSize: 10, fontWeight: 'bold', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
+                      ⚡ Cadence: {(latestBiomechanicsResult as SprintAnalysisResult).stepCadenceSpm ? `${(latestBiomechanicsResult as SprintAnalysisResult).stepCadenceSpm} SPM` : 'Optical Transit'} • Zero Synthetic Distance
+                    </Text>
+                    <Text style={{ color: '#94A3B8', fontSize: 8.5, marginTop: 2 }}>
+                      100Hz Hardware Accelerometer Periodic Footstrike Tracking • Strict Truth-in-Reporting
+                    </Text>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    <View style={{ flexBasis: '48%', flexGrow: 1, backgroundColor: '#130924', padding: 8, borderRadius: 10 }}>
+                      <Text style={{ color: '#94A3B8', fontSize: 8, fontWeight: 'bold' }}>STRIDE CADENCE</Text>
+                      <Text style={{ color: '#C084FC', fontSize: 13, fontWeight: '900', marginTop: 1 }}>
+                        {(latestBiomechanicsResult as SprintAnalysisResult).stepCadenceSpm ? `${(latestBiomechanicsResult as SprintAnalysisResult).stepCadenceSpm} SPM` : 'N/A (Optical Mount)'}
+                      </Text>
+                    </View>
+                    <View style={{ flexBasis: '48%', flexGrow: 1, backgroundColor: '#130924', padding: 8, borderRadius: 10 }}>
+                      <Text style={{ color: '#94A3B8', fontSize: 8, fontWeight: 'bold' }}>RUNWAY TRANSIT</Text>
+                      <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '900', marginTop: 1 }}>
+                        {(latestBiomechanicsResult as SprintAnalysisResult).transitDurationSec ? `${(latestBiomechanicsResult as SprintAnalysisResult).transitDurationSec}s` : 'Continuous Run'}
+                      </Text>
+                    </View>
+                    <View style={{ flexBasis: '48%', flexGrow: 1, backgroundColor: '#130924', padding: 8, borderRadius: 10 }}>
+                      <Text style={{ color: '#94A3B8', fontSize: 8, fontWeight: 'bold' }}>TOP SPEED (M/S)</Text>
+                      <Text style={{ color: '#64748B', fontSize: 10, fontWeight: '900', marginTop: 1 }}>
+                        UNAVAILABLE (Track Calibration Required)
+                      </Text>
+                    </View>
+                    <View style={{ flexBasis: '48%', flexGrow: 1, backgroundColor: '#130924', padding: 8, borderRadius: 10 }}>
+                      <Text style={{ color: '#94A3B8', fontSize: 8, fontWeight: 'bold' }}>30M SPLIT (S)</Text>
+                      <Text style={{ color: '#64748B', fontSize: 10, fontWeight: '900', marginTop: 1 }}>
+                        UNAVAILABLE (Track Calibration Required)
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* Verified Squat Repetition & Depth Card (ONLY shown if valid squat) */}
+              {latestBiomechanicsResult && latestBiomechanicsResult.isValid && latestBiomechanicsResult.drillCategory === 'squat' && (
+                <View style={{ backgroundColor: '#1E103C', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: '#2E1854', gap: 8 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 11.5 }}>🏋️ SQUAT REPETITION & DEPTH</Text>
+                    <View style={{ backgroundColor: 'rgba(250, 204, 21, 0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                      <Text style={{ color: '#FACC15', fontSize: 8.5, fontWeight: 'bold' }}>KINETIC DEPTH STANDARD</Text>
+                    </View>
+                  </View>
+
+                  <View style={{ backgroundColor: '#130924', borderRadius: 10, padding: 8, borderWidth: 1, borderColor: '#2E1854' }}>
+                    <Text style={{ color: '#FACC15', fontSize: 10, fontWeight: 'bold', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
+                      📐 Depth: {(latestBiomechanicsResult as SquatAnalysisResult).maxDepthCompressionPercent}% • Reps: {(latestBiomechanicsResult as SquatAnalysisResult).repetitionCount}
+                    </Text>
+                    <Text style={{ color: '#94A3B8', fontSize: 8.5, marginTop: 2 }}>
+                      Decoded Vertical Silhouette Height Compression & Cycle Inflection
+                    </Text>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    <View style={{ flexBasis: '48%', flexGrow: 1, backgroundColor: '#130924', padding: 8, borderRadius: 10 }}>
+                      <Text style={{ color: '#94A3B8', fontSize: 8, fontWeight: 'bold' }}>COMPLETED REPETITIONS</Text>
+                      <Text style={{ color: '#FACC15', fontSize: 13, fontWeight: '900', marginTop: 1 }}>
+                        {(latestBiomechanicsResult as SquatAnalysisResult).repetitionCount} Reps
+                      </Text>
+                    </View>
+                    <View style={{ flexBasis: '48%', flexGrow: 1, backgroundColor: '#130924', padding: 8, borderRadius: 10 }}>
+                      <Text style={{ color: '#94A3B8', fontSize: 8, fontWeight: 'bold' }}>MAX DEPTH COMPRESSION</Text>
+                      <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '900', marginTop: 1 }}>
+                        {(latestBiomechanicsResult as SquatAnalysisResult).maxDepthCompressionPercent}%
+                      </Text>
+                    </View>
+                    <View style={{ flexBasis: '48%', flexGrow: 1, backgroundColor: '#130924', padding: 8, borderRadius: 10 }}>
+                      <Text style={{ color: '#94A3B8', fontSize: 8, fontWeight: 'bold' }}>AVERAGE REP TEMPO</Text>
+                      <Text style={{ color: '#8B5CF6', fontSize: 13, fontWeight: '900', marginTop: 1 }}>
+                        {(latestBiomechanicsResult as SquatAnalysisResult).meanRepDurationSec ? `${(latestBiomechanicsResult as SquatAnalysisResult).meanRepDurationSec}s` : 'N/A'}
+                      </Text>
+                    </View>
+                    <View style={{ flexBasis: '48%', flexGrow: 1, backgroundColor: '#130924', padding: 8, borderRadius: 10 }}>
+                      <Text style={{ color: '#94A3B8', fontSize: 8, fontWeight: 'bold' }}>3D VALGUS STABILITY</Text>
+                      <Text style={{ color: '#64748B', fontSize: 10, fontWeight: '900', marginTop: 1 }}>
+                        UNAVAILABLE (3D Markers Required)
+                      </Text>
                     </View>
                   </View>
                 </View>
