@@ -2584,40 +2584,65 @@ export default function App() {
                     </View>
                   </View>
 
-                  {/* Level Tag (Constrained so it never overflows) */}
-                  <View style={{ backgroundColor: 'rgba(192, 132, 252, 0.15)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(192, 132, 252, 0.3)', flexShrink: 1, maxWidth: 140 }}>
-                    <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: '#C084FC', fontWeight: '900', fontSize: 9 }}>
-                      {t.level_label || 'LVL'} {athlete.level || 1} • {(athlete.levelTitle || 'Grassroots').toUpperCase()}
+                  {/* Level Tag (Pill badge cleanly sized so it never clips or wraps awkwardly) */}
+                  <View style={{
+                    backgroundColor: 'rgba(192, 132, 252, 0.15)',
+                    paddingHorizontal: 8,
+                    paddingVertical: 3.5,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: 'rgba(192, 132, 252, 0.3)',
+                    flexShrink: 0,
+                  }}>
+                    <Text style={{ color: '#C084FC', fontWeight: '900', fontSize: 9.5 }}>
+                      {t.level_label || 'LVL'} {athlete.level || 1} • {(athlete.levelTitle || 'Rookie').replace(/Grassroots\s*/i, '').replace(/District\s*/i, '').replace(/State\s*/i, '').replace(/National\s*/i, '').trim().toUpperCase() || 'ROOKIE'}
                     </Text>
                   </View>
                 </View>
 
-                {/* 7-Day Activity Dot Calendar (Mon-Sun in IST) */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
+                {/* 7-Day Activity Calendar (Mon-Sun in IST) */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
                   {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => {
                     const isCompleted = (athlete.activeDaysThisWeek || []).includes(idx);
                     const isToday = getISTDayIndex() === idx;
                     return (
-                      <View key={idx} style={{ alignItems: 'center', gap: 3 }}>
+                      <View key={idx} style={{ alignItems: 'center', gap: 4 }}>
+                        {/* Day Header Letter */}
+                        <Text style={{
+                          color: isToday ? '#C084FC' : isCompleted ? '#A78BFA' : '#64748B',
+                          fontSize: 10,
+                          fontWeight: isToday ? '900' : '700',
+                        }}>
+                          {day}
+                        </Text>
+
+                        {/* Status Circle */}
                         <View style={{
                           width: 28,
                           height: 28,
                           borderRadius: 14,
-                          backgroundColor: isCompleted ? '#8B5CF6' : '#2E1854',
+                          backgroundColor: isCompleted ? '#8B5CF6' : isToday ? 'rgba(192, 132, 252, 0.15)' : '#2E1854',
                           alignItems: 'center',
                           justifyContent: 'center',
                           borderWidth: isToday ? 1.5 : 0,
                           borderColor: isToday ? '#C084FC' : 'transparent',
                         }}>
                           {isCompleted ? (
-                            <Ionicons name="checkmark" color="#000" size={14} />
+                            <Ionicons name="checkmark" color="#FFF" size={15} />
+                          ) : isToday ? (
+                            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#C084FC' }} />
                           ) : (
-                            <Text style={{ color: isToday ? '#C084FC' : '#64748B', fontSize: 10, fontWeight: 'bold' }}>{day}</Text>
+                            <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: '#475569' }} />
                           )}
                         </View>
-                        <Text style={{ color: isCompleted ? '#8B5CF6' : isToday ? '#C084FC' : '#64748B', fontSize: 8, fontWeight: 'bold' }}>
-                          {day} {isToday ? '•' : ''}
-                        </Text>
+
+                        {/* Today Indicator Dot */}
+                        <View style={{
+                          width: 4,
+                          height: 4,
+                          borderRadius: 2,
+                          backgroundColor: isToday ? '#C084FC' : 'transparent',
+                        }} />
                       </View>
                     );
                   })}
