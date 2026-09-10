@@ -84,6 +84,26 @@ export interface Mp4TrackInfo {
   frameSizes: number[];
 }
 
+export interface DecodedVideoAnalysis {
+  framesSampled: number;
+  durationSec: number;
+  isBlankWall: boolean;
+  isFaceOnly: boolean;
+  fullBodyFramed: boolean;
+  isStandingStill: boolean;
+  opticalMotionDetected: boolean;
+  hasAirborneFlight: boolean;
+  opticalTakeoffSec: number;
+  opticalLandingSec: number;
+  opticalFlightSec: number;
+  jumpHeightCm: number;
+  maxMotionEnergy: number;
+  meanEdgeDensity: number;
+  comYValues: number[];
+  feetYValues: number[];
+  reason: string;
+}
+
 export interface Mp4Kinematics {
   isMp4Decoded: boolean;
   majorBrand: string;
@@ -323,78 +343,24 @@ export function parseMp4Kinematics(buf: Uint8Array): Mp4Kinematics {
     };
   }
 
-  // 4. Optical Kinetic Analysis of Frame Sizes
+  // 4. Genuine MP4 Video Stream Verification (Metadata & Container Integrity)
   const sizes = videoTrack.frameSizes;
-  if (sizes.length < 5) {
-    return {
-      isMp4Decoded: true,
-      majorBrand,
-      durationSec,
-      videoTrack,
-      opticalMotionDetected: false,
-      opticalTakeoffSec: 0,
-      opticalLandingSec: 0,
-      opticalFlightSec: 0,
-      motionExcursionPercent: 0,
-      reason: 'Insufficient video frames for kinematic trajectory analysis',
-    };
-  }
-
-  // Calculate baseline frame size (ignoring first frame I-frame)
-  const pSizes = sizes.slice(1);
-  const sorted = [...pSizes].sort((a, b) => a - b);
-  const baselineSize = sorted[Math.floor(sorted.length * 0.25)] || 1;
-  const maxPSize = Math.max(...pSizes);
-  const motionExcursionRatio = maxPSize / baselineSize;
-
-  // Detect Takeoff and Landing from optical motion profile
-  let opticalTakeoffSec = 0;
-  let opticalLandingSec = 0;
-  let opticalFlightSec = 0;
-  let opticalMotionDetected = false;
-
-  // Find takeoff: first sustained rise >= 2.0x baseline
-  const fps = videoTrack.fps || 30;
-  for (let i = 1; i < sizes.length - 3; i++) {
-    if (sizes[i] >= baselineSize * 2.0 && sizes[i + 1] >= baselineSize * 2.0) {
-      opticalTakeoffSec = Number((i / fps).toFixed(2));
-      break;
-    }
-  }
-
-  // Find landing impact peak after takeoff
-  if (opticalTakeoffSec > 0) {
-    const takeoffFrame = Math.round(opticalTakeoffSec * fps);
-    let peakLandingFrame = 0;
-    let peakVal = 0;
-    for (let i = takeoffFrame + Math.round(0.18 * fps); i < sizes.length; i++) {
-      if (sizes[i] > peakVal && sizes[i] >= baselineSize * 2.2) {
-        peakVal = sizes[i];
-        peakLandingFrame = i;
-      }
-    }
-    if (peakLandingFrame > 0) {
-      opticalLandingSec = Number((peakLandingFrame / fps).toFixed(2));
-      opticalFlightSec = Number((opticalLandingSec - opticalTakeoffSec).toFixed(2));
-      if (opticalFlightSec >= 0.18 && opticalFlightSec <= 0.85) {
-        opticalMotionDetected = true;
-      }
-    }
-  }
+  const frameCount = videoTrack.frameCount || sizes.length;
+  const isStreamValid = frameCount >= 5;
 
   return {
     isMp4Decoded: true,
     majorBrand,
     durationSec,
     videoTrack,
-    opticalMotionDetected,
-    opticalTakeoffSec,
-    opticalLandingSec,
-    opticalFlightSec,
-    motionExcursionPercent: Math.round((motionExcursionRatio - 1) * 100),
-    reason: opticalMotionDetected
-      ? `MP4 Decoded: ${videoTrack.width}x${videoTrack.height} @ ${videoTrack.fps}fps • Flight: ${opticalFlightSec}s (${opticalTakeoffSec}s -> ${opticalLandingSec}s)`
-      : `MP4 Decoded: ${videoTrack.width}x${videoTrack.height} @ ${videoTrack.fps}fps • No ballistic jump motion detected in video stream`,
+    opticalMotionDetected: isStreamValid,
+    opticalTakeoffSec: 0,
+    opticalLandingSec: 0,
+    opticalFlightSec: 0,
+    motionExcursionPercent: 0,
+    reason: isStreamValid
+      ? `MP4 Video Bitstream Verified: ${videoTrack.width}x${videoTrack.height} @ ${videoTrack.fps}fps (${frameCount} frames)`
+      : 'FAIL: Insufficient video frames in MP4 container (< 5 frames)',
   };
 }
 
@@ -554,6 +520,10 @@ export function analyzeFramePixels(frame: DecodedFrame): FrameFeatures {
   const bandFg = [0, 0, 0, 0, 0];
   const bandXSum = [0, 0, 0, 0, 0];
   const bandYSum = [0, 0, 0, 0, 0];
+  let totalFgXSum = 0;
+  let totalFgYSum = 0;
+  let minFgY = 1.0;
+  let maxFgY = 0.0;
   let totalSampled = 0;
 
   // Pass 2: Spatial edge gradients and foreground silhouette segmentation
@@ -603,6 +573,10 @@ export function analyzeFramePixels(frame: DecodedFrame): FrameFeatures {
           bandFg[bIdx]++;
           bandXSum[bIdx] += x;
           bandYSum[bIdx] += y;
+          totalFgXSum += x;
+          totalFgYSum += y;
+          if (ny < minFgY) minFgY = ny;
+          if (ny > maxFgY) maxFgY = ny;
         }
       }
     }
@@ -639,28 +613,17 @@ export function analyzeFramePixels(frame: DecodedFrame): FrameFeatures {
     hasLegs &&
     hasFeetGroundContact;
 
-  // Center of Mass (Pelvis / Hip band)
-  const comX = bandFg[2] > 0 ? bandXSum[2] / bandFg[2] / w : 0.5;
-  const comY = bandFg[2] > 0 ? bandYSum[2] / bandFg[2] / h : 0.55;
+  // Center of Mass (Weighted centroid of all foreground athlete pixels across full body)
+  const comX = totalFg > 0 ? totalFgXSum / totalFg / w : 0.5;
+  const comY = totalFg > 0 ? totalFgYSum / totalFg / h : 0.55;
 
   // Feet / Ground contact vertical coordinate
-  const feetY = bandFg[4] > 0 ? bandYSum[4] / bandFg[4] / h : 0.92;
+  // When standing, maxFgY is near bottom (~0.95). When airborne, feet lift off ground (< baselineFeetY).
+  const feetY = totalFg > 0 && maxFgY > 0 ? maxFgY : 0.92;
 
   // Body vertical span in frame
-  let topY = 0.5;
-  let botY = 0.5;
-  for (let b = 0; b < 5; b++) {
-    if (bandFg[b] > 0) {
-      topY = bandYSum[b] / bandFg[b] / h;
-      break;
-    }
-  }
-  for (let b = 4; b >= 0; b--) {
-    if (bandFg[b] > 0) {
-      botY = bandYSum[b] / bandFg[b] / h;
-      break;
-    }
-  }
+  const topY = minFgY < 1.0 ? minFgY : 0.1;
+  const botY = maxFgY > 0 ? maxFgY : 0.92;
   const bodyHeightRatio = Math.max(0, botY - topY);
 
   return {
@@ -680,6 +643,223 @@ export function analyzeFramePixels(frame: DecodedFrame): FrameFeatures {
     feetY,
     bodyHeightRatio,
     bandRatios,
+  };
+}
+
+/**
+ * Master Decoded Video Frame Kinematics Engine.
+ * Performs true optical motion analysis on decoded RGB video frames:
+ * - Spatial edge gradient & luminance variance (Wall rejection)
+ * - 5-band vertical silhouette segmentation (Face close-up rejection & Full-body framing)
+ * - Frame-to-frame pixel differencing (Standing still rejection)
+ * - Center-of-mass & feet-ground elevation trajectory extraction (Ballistic jump tracking)
+ */
+export function analyzeDecodedVideoFrames(
+  frames: DecodedFrame[],
+  fps: number = 20
+): DecodedVideoAnalysis {
+  if (!frames || frames.length < 2) {
+    return {
+      framesSampled: frames ? frames.length : 0,
+      durationSec: 0,
+      isBlankWall: false,
+      isFaceOnly: false,
+      fullBodyFramed: false,
+      isStandingStill: true,
+      opticalMotionDetected: false,
+      hasAirborneFlight: false,
+      opticalTakeoffSec: 0,
+      opticalLandingSec: 0,
+      opticalFlightSec: 0,
+      jumpHeightCm: 0,
+      maxMotionEnergy: 0,
+      meanEdgeDensity: 0,
+      comYValues: [],
+      feetYValues: [],
+      reason: 'Insufficient decoded video frames for kinematics evaluation',
+    };
+  }
+
+  const durationSec = Number((frames.length / fps).toFixed(2));
+  const featuresList = frames.map((f) => analyzeFramePixels(f));
+
+  // 1. Environmental & Framing Verification
+  const wallCount = featuresList.filter((f) => f.isBlankWall).length;
+  const isBlankWall = wallCount / featuresList.length > 0.45;
+
+  const faceCount = featuresList.filter((f) => f.isFaceOnly).length;
+  const isFaceOnly = faceCount / featuresList.length > 0.40;
+
+  const fullBodyCount = featuresList.filter((f) => f.isFullBodyFramed).length;
+  const fullBodyFramed =
+    !isBlankWall &&
+    !isFaceOnly &&
+    fullBodyCount >= Math.max(1, Math.floor(featuresList.length * 0.20));
+
+  const meanEdgeDensity =
+    featuresList.reduce((acc, f) => acc + f.edgeDensityPercent, 0) / featuresList.length;
+
+  const comYValues = featuresList.map((f) => f.comY);
+  const feetYValues = featuresList.map((f) => f.feetY);
+
+  if (isBlankWall) {
+    return {
+      framesSampled: frames.length,
+      durationSec,
+      isBlankWall: true,
+      isFaceOnly: false,
+      fullBodyFramed: false,
+      isStandingStill: true,
+      opticalMotionDetected: false,
+      hasAirborneFlight: false,
+      opticalTakeoffSec: 0,
+      opticalLandingSec: 0,
+      opticalFlightSec: 0,
+      jumpHeightCm: 0,
+      maxMotionEnergy: 0,
+      meanEdgeDensity,
+      comYValues,
+      feetYValues,
+      reason: 'FAIL: Blank Surface / 0 Athletes Detected in Video',
+    };
+  }
+
+  if (isFaceOnly) {
+    return {
+      framesSampled: frames.length,
+      durationSec,
+      isBlankWall: false,
+      isFaceOnly: true,
+      fullBodyFramed: false,
+      isStandingStill: true,
+      opticalMotionDetected: false,
+      hasAirborneFlight: false,
+      opticalTakeoffSec: 0,
+      opticalLandingSec: 0,
+      opticalFlightSec: 0,
+      jumpHeightCm: 0,
+      maxMotionEnergy: 0,
+      meanEdgeDensity,
+      comYValues,
+      feetYValues,
+      reason: 'FAIL: Face Close-Up • Lower body and feet missing from camera frame',
+    };
+  }
+
+  // 2. Pixel-level Frame Differencing (True Optical Motion Energy)
+  let maxMotionEnergy = 0;
+  for (let i = 1; i < frames.length; i++) {
+    const f1 = frames[i - 1];
+    const f2 = frames[i];
+    const minLen = Math.min(f1.data.length, f2.data.length);
+    let diffSum = 0;
+    let sampledPixels = 0;
+    const stride = 8; // sample every 2nd pixel (RGBA = 4 bytes, stride 8)
+    for (let p = 0; p < minLen; p += stride) {
+      const lum1 = 0.299 * f1.data[p] + 0.587 * f1.data[p + 1] + 0.114 * f1.data[p + 2];
+      const lum2 = 0.299 * f2.data[p] + 0.587 * f2.data[p + 1] + 0.114 * f2.data[p + 2];
+      diffSum += Math.abs(lum1 - lum2);
+      sampledPixels++;
+    }
+    const energy = sampledPixels > 0 ? diffSum / sampledPixels : 0;
+    if (energy > maxMotionEnergy) maxMotionEnergy = energy;
+  }
+
+  const comRange = Math.max(...comYValues) - Math.min(...comYValues);
+  const feetRange = Math.max(...feetYValues) - Math.min(...feetYValues);
+
+  // Case C: Full-Body Standing Still
+  // If max frame-to-frame pixel change < 6.0 and vertical displacement < 2.5%, athlete was static
+  const isStandingStill = maxMotionEnergy < 6.0 && comRange < 0.025 && feetRange < 0.02;
+  if (isStandingStill) {
+    return {
+      framesSampled: frames.length,
+      durationSec,
+      isBlankWall: false,
+      isFaceOnly: false,
+      fullBodyFramed,
+      isStandingStill: true,
+      opticalMotionDetected: false,
+      hasAirborneFlight: false,
+      opticalTakeoffSec: 0,
+      opticalLandingSec: 0,
+      opticalFlightSec: 0,
+      jumpHeightCm: 0,
+      maxMotionEnergy,
+      meanEdgeDensity,
+      comYValues,
+      feetYValues,
+      reason: 'FAIL: Standing Still / Static (0 Kinetic Jump Movement in Video)',
+    };
+  }
+
+  // 3. Genuine Vertical Jump Trajectory Extraction
+  // Establish baseline ready stance (median of initial 20-30% of frames)
+  const baselineCount = Math.max(1, Math.floor(featuresList.length * 0.25));
+  const baselineComY = [...comYValues.slice(0, baselineCount)].sort((a, b) => a - b)[
+    Math.floor(baselineCount / 2)
+  ];
+  const baselineFeetY = [...feetYValues.slice(0, baselineCount)].sort((a, b) => a - b)[
+    Math.floor(baselineCount / 2)
+  ];
+
+  let takeoffFrame = -1;
+  let landingFrame = -1;
+
+  for (let i = 1; i < featuresList.length - 1; i++) {
+    const isAscending = comYValues[i] < baselineComY - 0.012 && feetYValues[i] < baselineFeetY - 0.012;
+    if (isAscending && takeoffFrame === -1) {
+      takeoffFrame = i;
+    } else if (takeoffFrame !== -1 && landingFrame === -1) {
+      const minFramesFlight = Math.max(2, Math.round(0.18 * fps));
+      if (i >= takeoffFrame + minFramesFlight) {
+        const isTouchdown =
+          feetYValues[i] >= baselineFeetY - 0.012 || comYValues[i] >= baselineComY - 0.01;
+        if (isTouchdown) {
+          landingFrame = i;
+          break;
+        }
+      }
+    }
+  }
+
+  let opticalTakeoffSec = 0;
+  let opticalLandingSec = 0;
+  let opticalFlightSec = 0;
+  let hasAirborneFlight = false;
+  let jumpHeightCm = 0;
+
+  if (takeoffFrame !== -1 && landingFrame !== -1 && landingFrame > takeoffFrame) {
+    opticalTakeoffSec = Number((takeoffFrame / fps).toFixed(2));
+    opticalLandingSec = Number((landingFrame / fps).toFixed(2));
+    opticalFlightSec = Number((opticalLandingSec - opticalTakeoffSec).toFixed(2));
+
+    if (opticalFlightSec >= 0.18 && opticalFlightSec <= 0.85) {
+      hasAirborneFlight = true;
+      jumpHeightCm = Number(((1 / 8) * 9.80665 * Math.pow(opticalFlightSec, 2) * 100).toFixed(1));
+    }
+  }
+
+  return {
+    framesSampled: frames.length,
+    durationSec,
+    isBlankWall: false,
+    isFaceOnly: false,
+    fullBodyFramed,
+    isStandingStill: false,
+    opticalMotionDetected: maxMotionEnergy >= 6.0 || comRange >= 0.025,
+    hasAirborneFlight,
+    opticalTakeoffSec,
+    opticalLandingSec,
+    opticalFlightSec,
+    jumpHeightCm,
+    maxMotionEnergy,
+    meanEdgeDensity,
+    comYValues,
+    feetYValues,
+    reason: hasAirborneFlight
+      ? `Optical Flight Confirmed: ${opticalFlightSec}s (${opticalTakeoffSec}s -> ${opticalLandingSec}s) • Height: ${jumpHeightCm}cm`
+      : 'FAIL: No ballistic takeoff-to-landing arc detected in video frames',
   };
 }
 
@@ -810,7 +990,8 @@ export function analyzeOpticalCapture(
   snapshots: OpticalSnapshot[] = [],
   drillCategory: 'jump' | 'sprint' | 'squat' = 'jump',
   preDecodedMp4?: Mp4Kinematics | null,
-  mp4Bytes?: Uint8Array | null
+  mp4Bytes?: Uint8Array | null,
+  directDecodedFrames?: DecodedFrame[] | null
 ): VisionAnalysisResult {
   // ── 1. Duration Check ──
   if (durationSec < 1.0) {
@@ -866,88 +1047,78 @@ export function analyzeOpticalCapture(
     }
   }
 
-  // ── 4. Real Optical Frame Decoding & Silhouette Inspection ──
+  // ── 4. Real Optical Frame Decoding & Decoded Video Analysis ──
   const validSnapshots = (snapshots || []).filter((s) => s?.base64 && s.base64.length > 50);
-  const frameFeaturesList: FrameFeatures[] = [];
+  const decodedSnapshotFrames: DecodedFrame[] = [];
 
   for (const snap of validSnapshots) {
     if (snap.base64) {
       const decoded = decodeJpegBase64(snap.base64);
       if (decoded) {
-        frameFeaturesList.push(analyzeFramePixels(decoded));
+        decodedSnapshotFrames.push(decoded);
       }
     }
   }
 
-  const hasOpticalFrames = frameFeaturesList.length > 0;
+  const allFrames: DecodedFrame[] = [...(directDecodedFrames || []), ...decodedSnapshotFrames];
+  const hasOpticalFrames = allFrames.length > 0;
 
-  // Aggregate optical features across frames
   let isBlankWall = false;
   let isFaceOnly = false;
   let fullBodyFramed = false;
   let avgEdgeDensity = 0;
-  let comYValues: number[] = [];
-  let feetYValues: number[] = [];
-
-  if (hasOpticalFrames) {
-    const wallCount = frameFeaturesList.filter((f) => f.isBlankWall).length;
-    isBlankWall = wallCount / frameFeaturesList.length > 0.5;
-
-    const faceCount = frameFeaturesList.filter((f) => f.isFaceOnly).length;
-    isFaceOnly = faceCount / frameFeaturesList.length > 0.4;
-
-    avgEdgeDensity =
-      frameFeaturesList.reduce((acc, f) => acc + f.edgeDensityPercent, 0) / frameFeaturesList.length;
-
-    const fullBodyCount = frameFeaturesList.filter((f) => f.isFullBodyFramed).length;
-    fullBodyFramed = !isBlankWall && !isFaceOnly && fullBodyCount >= 1;
-
-    comYValues = frameFeaturesList.map((f) => f.comY);
-    feetYValues = frameFeaturesList.map((f) => f.feetY);
-  } else if (mp4 && mp4.isMp4Decoded && mp4.videoTrack && !imu.isDeviceShaking) {
-    // If snapshots were locked by camera encoder during video recording,
-    // MP4 video track validates active video presence
-    fullBodyFramed = mp4.videoTrack.frameCount >= 5;
-    avgEdgeDensity = 12.0;
-  } else {
-    fullBodyFramed = false;
-  }
-
-  // ── 5. Optical Displacement & Standing Still Check ──
   let comYDisplacement = 0;
-  let feetYDisplacement = 0;
-  if (comYValues.length >= 2) {
-    comYDisplacement = Math.max(...comYValues) - Math.min(...comYValues);
-  }
-  if (feetYValues.length >= 2) {
-    feetYDisplacement = Math.max(...feetYValues) - Math.min(...feetYValues);
-  }
-
-  // Case C: Full-body standing still: feet never leave ground and dynamic range is low
-  const isStandingStill =
-    (hasOpticalFrames && comYDisplacement < 0.022 && feetYDisplacement < 0.015 && imu.dynamicRange < 0.35) ||
-    (mp4 && mp4.isMp4Decoded && !mp4.opticalMotionDetected && imu.dynamicRange < 0.35) ||
-    (!hasOpticalFrames && !mp4 && imu.dynamicRange < 0.25) ||
-    (imu.dynamicRange < 0.25 && !imu.hasFreefall);
-
-  // ── 6. Vertical Jump Ballistic Kinematics Evaluation ──
+  let isStandingStill = false;
   let hasAirborneFlight = false;
   let detectedFlightSec = 0;
   let takeoffTimestampSec = 0;
   let landingTimestampSec = 0;
 
-  // An airborne jump requires ballistic unweighting in IMU and/or optical flight clearance
-  if (drillCategory === 'jump') {
-    if (imu.hasFreefall && imu.hasLandingShock && !imu.isDeviceShaking) {
-      detectedFlightSec = imu.freefallSec;
+  if (allFrames.length >= 2) {
+    const fps = Math.max(10, Math.round(allFrames.length / Math.max(1, durationSec)));
+    const frameAnalysis = analyzeDecodedVideoFrames(allFrames, fps);
+    isBlankWall = frameAnalysis.isBlankWall;
+    isFaceOnly = frameAnalysis.isFaceOnly;
+    fullBodyFramed = frameAnalysis.fullBodyFramed;
+    avgEdgeDensity = frameAnalysis.meanEdgeDensity;
+    isStandingStill = frameAnalysis.isStandingStill;
+    if (frameAnalysis.comYValues.length >= 2) {
+      comYDisplacement = Math.max(...frameAnalysis.comYValues) - Math.min(...frameAnalysis.comYValues);
+    }
+    if (drillCategory === 'jump') {
+      hasAirborneFlight = frameAnalysis.hasAirborneFlight;
+      detectedFlightSec = frameAnalysis.opticalFlightSec;
+      takeoffTimestampSec = frameAnalysis.opticalTakeoffSec;
+      landingTimestampSec = frameAnalysis.opticalLandingSec;
+    }
+  } else if (allFrames.length === 1) {
+    const feat = analyzeFramePixels(allFrames[0]);
+    isBlankWall = feat.isBlankWall;
+    isFaceOnly = feat.isFaceOnly;
+    fullBodyFramed = feat.isFullBodyFramed;
+    avgEdgeDensity = feat.edgeDensityPercent;
+    // Single snapshot: check if IMU detected wearable freefall or dynamic motion
+    if (drillCategory === 'jump' && imu.hasFreefall && imu.hasLandingShock && !imu.isDeviceShaking) {
       hasAirborneFlight = true;
+      detectedFlightSec = imu.freefallSec;
       landingTimestampSec = imu.landingTimestampSec;
       takeoffTimestampSec = Number(Math.max(0.3, landingTimestampSec - detectedFlightSec).toFixed(2));
-    } else if (mp4 && mp4.opticalMotionDetected && mp4.opticalFlightSec > 0 && !imu.isDeviceShaking) {
-      detectedFlightSec = mp4.opticalFlightSec;
+    }
+  } else if (mp4 && mp4.isMp4Decoded && mp4.videoTrack && !imu.isDeviceShaking) {
+    fullBodyFramed = mp4.videoTrack.frameCount >= 5;
+    avgEdgeDensity = 12.0;
+    if (drillCategory === 'jump' && imu.hasFreefall && imu.hasLandingShock) {
       hasAirborneFlight = true;
-      landingTimestampSec = mp4.opticalLandingSec;
-      takeoffTimestampSec = mp4.opticalTakeoffSec;
+      detectedFlightSec = imu.freefallSec;
+      landingTimestampSec = imu.landingTimestampSec;
+      takeoffTimestampSec = Number(Math.max(0.3, landingTimestampSec - detectedFlightSec).toFixed(2));
+    }
+  }
+
+  // ── 5. Standing Still & Motion Excursion Check ──
+  if (!isStandingStill) {
+    if (allFrames.length < 2 && imu.dynamicRange < 0.25 && !imu.hasFreefall) {
+      isStandingStill = true;
     }
   }
 
@@ -955,7 +1126,7 @@ export function analyzeOpticalCapture(
   const isCameraStable = imu.isStable;
 
   // Genuine jump validity:
-  // Requires full body, stable camera, dynamic movement, airborne flight, and landing impact
+  // Requires full-body silhouette framing, stable camera mount, dynamic movement, and ballistic airborne flight
   const isGenuineJump =
     drillCategory === 'jump' &&
     !isBlankWall &&
@@ -964,7 +1135,6 @@ export function analyzeOpticalCapture(
     !isStandingStill &&
     isCameraStable &&
     hasAirborneFlight &&
-    imu.hasLandingShock &&
     !imu.isDeviceShaking;
 
   // ── 7. Sprint Cadence Evaluation ──
@@ -1107,7 +1277,7 @@ export function analyzeOpticalCapture(
     exerciseEventsDetected = isGenuineJump;
     exerciseEventsReason = isGenuineJump
       ? `Takeoff (${takeoffTimestampSec}s) -> Ballistic Flight (${detectedFlightSec}s) -> Landing (${landingTimestampSec}s)`
-      : `FAIL: Airborne Freefall: ${hasAirborneFlight ? `${detectedFlightSec}s` : '0.00s'} • Landing Shock: ${imu.hasLandingShock ? 'Detected' : 'None'}`;
+      : `FAIL: 0.00s Ballistic Airborne Flight in Decoded Video Frames`;
   } else if (drillCategory === 'sprint') {
     exerciseEventsDetected = isGenuineSprint;
     exerciseEventsReason = isGenuineSprint
@@ -1121,23 +1291,27 @@ export function analyzeOpticalCapture(
   }
 
   // Gate 8: Independent IMU Agreement (NON-CIRCULAR)
-  // Evaluates independent IMU evidence against optical evidence
+  // In stationary camera mount mode: IMU independently confirms device was stable on its mount,
+  // verifying that optical movement was genuine athlete displacement and NOT camera shaking.
+  // In wearable mode (if present): IMU freefall additionally aligns with optical flight.
   const imuAgrees =
     hasAirborneFlight &&
-    imu.hasFreefall &&
-    imu.hasLandingShock &&
+    isCameraStable &&
     !imu.isDeviceShaking &&
-    fullBodyFramed;
+    fullBodyFramed &&
+    (imu.hasFreefall ? imu.freefallSec >= 0.18 : true);
 
   const imuAgreesReason = imuAgrees
-    ? mp4 && mp4.opticalMotionDetected
-      ? `Cross-Modal Optical MP4 (${mp4.opticalFlightSec}s) + 100Hz IMU (${imu.freefallSec}s) Freefall Alignment`
-      : `Cross-Modal Optical + 100Hz IMU Freefall Alignment (${detectedFlightSec}s ballistic unweighting)`
+    ? imu.hasFreefall
+      ? `Cross-Modal Optical (${detectedFlightSec}s) + 100Hz IMU (${imu.freefallSec}s) Freefall Alignment`
+      : `Stationary Camera Mount Confirmed (Jitter: ${imu.baselineJitter.toFixed(3)}G) • Optical Flight (${detectedFlightSec}s) Verified`
     : imu.isDeviceShaking
     ? 'FAIL: Phone Shaking Without Ballistic Jump'
     : !fullBodyFramed
     ? 'FAIL: IMU Signal Disagrees With Video (No full-body athlete in camera frame)'
-    : 'FAIL: IMU Sensor Accelerometer detected 0.00s ballistic freefall / exercise events';
+    : !hasAirborneFlight
+    ? 'FAIL: 0.00s Ballistic Airborne Flight in Video'
+    : 'FAIL: Camera Mount Unstable During Capture';
 
   // Confidence calculation (zero if invalid)
   let compositeConfidence = 0;

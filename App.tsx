@@ -1060,6 +1060,32 @@ export default function App() {
     setCountdownNumber(3);
     setRecordDurationSec(0);
 
+    // ── PRE-RECORDING CALIBRATION SNAPSHOT (Capture before video session starts) ──
+    opticalSnapshotsRef.current = [];
+    if (cameraRef.current && typeof cameraRef.current.takePictureAsync === 'function') {
+      try {
+        cameraRef.current
+          .takePictureAsync({
+            base64: true,
+            quality: 0.25,
+            skipProcessing: true,
+            shutterSound: false,
+          })
+          .then((snap: any) => {
+            if (snap && snap.base64) {
+              opticalSnapshotsRef.current.push({
+                uri: snap.uri,
+                width: snap.width || 480,
+                height: snap.height || 640,
+                base64: snap.base64,
+                timestampMs: Date.now(),
+              });
+            }
+          })
+          .catch(() => {});
+      } catch (e) {}
+    }
+
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     } catch (e) {}
@@ -1086,9 +1112,8 @@ export default function App() {
         setDrillPhase('recording');
         setRecordDurationSec(0);
 
-        // ── RESET SAMPLES & START REAL VIDEO + OPTICAL CAPTURE ──
+        // ── RESET ACCEL SAMPLES & START REAL VIDEO CAPTURE (Preserve calibration frame) ──
         accelSamplesRef.current = [];
-        opticalSnapshotsRef.current = [];
         recordedVideoUriRef.current = null;
         isFrameCapturingRef.current = true;
 
@@ -3989,15 +4014,15 @@ export default function App() {
                     </Text>
                   </View>
                   <View style={{ backgroundColor: '#130924', padding: 8, borderRadius: 8, gap: 4 }}>
-                    <Text style={{ color: '#E2E8F0', fontSize: 9.5 }}>• Full-body pose: <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>❌ Not detected</Text></Text>
-                    <Text style={{ color: '#E2E8F0', fontSize: 9.5 }}>• Required leg joints: <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>❌ Missing from frame</Text></Text>
-                    <Text style={{ color: '#E2E8F0', fontSize: 9.5 }}>• Feet visible in frame: <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>❌ No</Text></Text>
+                    <Text style={{ color: '#E2E8F0', fontSize: 9.5 }}>• Full-body silhouette: <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>❌ Not framed in camera</Text></Text>
+                    <Text style={{ color: '#E2E8F0', fontSize: 9.5 }}>• Lower body & limbs: <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>❌ Missing from frame</Text></Text>
+                    <Text style={{ color: '#E2E8F0', fontSize: 9.5 }}>• Feet visible on ground: <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>❌ No</Text></Text>
                     <Text style={{ color: '#E2E8F0', fontSize: 9.5 }}>• Starting ready stance: <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>❌ Not established</Text></Text>
-                    <Text style={{ color: '#E2E8F0', fontSize: 9.5 }}>• Ballistic Takeoff & Flight: <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>❌ 0.00s airtime</Text></Text>
-                    <Text style={{ color: '#E2E8F0', fontSize: 9.5 }}>• Landing Impact Shock: <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>❌ None detected</Text></Text>
+                    <Text style={{ color: '#E2E8F0', fontSize: 9.5 }}>• Ballistic takeoff & flight: <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>❌ 0.00s airtime</Text></Text>
+                    <Text style={{ color: '#E2E8F0', fontSize: 9.5 }}>• Camera mount stability: <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>❌ Unstable / Shaking</Text></Text>
                   </View>
                   <Text style={{ color: '#94A3B8', fontSize: 8.5, fontStyle: 'italic', marginTop: 2 }}>
-                    Camera optical pose & 100Hz IMU accelerometer must cross-validate genuine kinetic movement phases before metrics can be computed.
+                    Optical video silhouette tracking & 100Hz IMU accelerometer must cross-validate genuine kinetic movement phases before metrics can be computed.
                   </Text>
                 </View>
               )}

@@ -44,11 +44,13 @@ function makeWallFrame(w = 120, h = 160) {
 }
 
 // Case C & D: Full Body
-function makeBodyFrame(w = 120, h = 160, yShift = 0) {
+function makeBodyFrame(w = 120, h = 160, elevationShift = 0) {
   return createJpeg(w, h, (buf) => {
     const cx = w / 2;
     for (let y = 0; y < h; y++) {
-      const ny = y / h - yShift;
+      // Screen space: y=0 is top, y=h is bottom.
+      // Positive elevationShift raises the athlete upward (smaller y), negative lowers (dip).
+      const ny = y / h + elevationShift;
       for (let x = 0; x < w; x++) {
         const idx = (y * w + x) * 4;
         let isBody = false;
@@ -116,7 +118,7 @@ function makeAccelShaking(count = 40) {
   return samples;
 }
 
-function buildTestMp4(durationSec = 2.5, fps = 30, isJump = true): Uint8Array {
+function buildTestMp4(durationSec = 2.5, fps = 30): Uint8Array {
   const totalFrames = Math.round(durationSec * fps);
   const timescale = 600;
   const durationUnits = Math.round(durationSec * timescale);
@@ -170,14 +172,9 @@ function buildTestMp4(durationSec = 2.5, fps = 30, isJump = true): Uint8Array {
   const stszPayload = Buffer.alloc(12 + totalFrames * 4);
   stszPayload.writeUInt32BE(0, 4);
   stszPayload.writeUInt32BE(totalFrames, 8);
+  // Realistic standard H.264 frame sizes: I-frame ~32KB, P-frames ~2.6KB with normal variance
   for (let i = 0; i < totalFrames; i++) {
-    let size = 2500;
-    if (i === 0) size = 35000;
-    else if (isJump) {
-      if (i >= 15 && i < 20) size = 5200;
-      else if (i >= 20 && i < 33) size = 18500;
-      else if (i >= 33 && i < 37) size = 24000;
-    }
+    const size = i === 0 ? 32000 : 2600 + ((i * 37) % 300);
     stszPayload.writeUInt32BE(size, 12 + i * 4);
   }
   const stsz = box('stsz', stszPayload);
@@ -196,21 +193,24 @@ async function runTests() {
   console.log('SPORTLENS COMPUTER VISION & INDEPENDENT IMU ACCEPTANCE SUITE');
   console.log('================================================================\n');
 
-  const mp4Static = buildTestMp4(2.0, 30, false);
-  const mp4Jump = buildTestMp4(2.5, 30, true);
+  const mp4Standard = buildTestMp4(2.5, 30);
 
   // TEST CASE A: FACE ONLY
   console.log('>>> TEST CASE A: FACE ONLY RECORDING');
-  const faceSnaps = [{ base64: makeFaceFrame() }, { base64: makeFaceFrame() }];
-  const resA = await analyzeVideoJumpKinematics(2.0, 68, makeAccelStatic(), 'file:///test_video.mp4', faceSnaps, mp4Static);
+  const faceSnaps = [
+    { base64: makeFaceFrame() },
+    { base64: makeFaceFrame() },
+    { base64: makeFaceFrame() },
+  ];
+  const resA = await analyzeVideoJumpKinematics(2.0, 68, makeAccelStatic(), 'file:///test_video.mp4', faceSnaps, mp4Standard);
   console.log('Status: isValid =', resA.isValid, '| Score =', resA.score, '| Height =', resA.jumpHeightCm, 'cm');
   console.log('Gate 2 (Full-Body Framing):', resA.gates![1].passed ? 'PASS' : 'FAIL', '-', resA.gates![1].telemetry);
   console.log('Gate 10 (Metric Calculated):', resA.gates![9].passed ? 'PASS' : 'FAIL', '-', resA.gates![9].telemetry);
 
   // TEST CASE B: BLANK WALL
   console.log('\n>>> TEST CASE B: BLANK WALL / EMPTY ROOM');
-  const wallSnaps = [{ base64: makeWallFrame() }];
-  const resB = await analyzeVideoJumpKinematics(2.0, 68, makeAccelStatic(), 'file:///test_video.mp4', wallSnaps, mp4Static);
+  const wallSnaps = [{ base64: makeWallFrame() }, { base64: makeWallFrame() }];
+  const resB = await analyzeVideoJumpKinematics(2.0, 68, makeAccelStatic(), 'file:///test_video.mp4', wallSnaps, mp4Standard);
   console.log('Status: isValid =', resB.isValid, '| Score =', resB.score, '| Height =', resB.jumpHeightCm, 'cm');
   console.log('Gate 1 (Single Athlete):', resB.gates![0].passed ? 'PASS' : 'FAIL', '-', resB.gates![0].telemetry);
   console.log('Gate 10 (Metric Calculated):', resB.gates![9].passed ? 'PASS' : 'FAIL', '-', resB.gates![9].telemetry);
@@ -218,11 +218,13 @@ async function runTests() {
   // TEST CASE C: FULL-BODY STANDING STILL
   console.log('\n>>> TEST CASE C: FULL-BODY STANDING STILL (0 MOVEMENT)');
   const stillSnaps = [
-    { base64: makeBodyFrame(120, 160, 0) },
-    { base64: makeBodyFrame(120, 160, 0) },
-    { base64: makeBodyFrame(120, 160, 0) },
+    { base64: makeBodyFrame(120, 160, 0.0) },
+    { base64: makeBodyFrame(120, 160, 0.0) },
+    { base64: makeBodyFrame(120, 160, 0.0) },
+    { base64: makeBodyFrame(120, 160, 0.0) },
+    { base64: makeBodyFrame(120, 160, 0.0) },
   ];
-  const resC = await analyzeVideoJumpKinematics(2.0, 68, makeAccelStatic(), 'file:///test_video.mp4', stillSnaps, mp4Static);
+  const resC = await analyzeVideoJumpKinematics(2.0, 68, makeAccelStatic(), 'file:///test_video.mp4', stillSnaps, mp4Standard);
   console.log('Status: isValid =', resC.isValid, '| Score =', resC.score, '| Height =', resC.jumpHeightCm, 'cm');
   console.log('Gate 6 (Movement Detected):', resC.gates![5].passed ? 'PASS' : 'FAIL', '-', resC.gates![5].telemetry);
   console.log('Gate 7 (Exercise Events):', resC.gates![6].passed ? 'PASS' : 'FAIL', '-', resC.gates![6].telemetry);
@@ -231,12 +233,26 @@ async function runTests() {
   // TEST CASE D: GENUINE ATHLETIC VERTICAL JUMP
   console.log('\n>>> TEST CASE D: GENUINE ATHLETIC VERTICAL JUMP');
   const jumpSnaps = [
-    { base64: makeBodyFrame(120, 160, 0) }, // Baseline stance
-    { base64: makeBodyFrame(120, 160, -0.06) }, // Countermovement dip
-    { base64: makeBodyFrame(120, 160, 0.14) }, // Takeoff & flight apex
-    { base64: makeBodyFrame(120, 160, 0) }, // Landing
+    // 0.0s - 0.25s: Ready stance
+    { base64: makeBodyFrame(120, 160, 0.0) },
+    { base64: makeBodyFrame(120, 160, 0.0) },
+    { base64: makeBodyFrame(120, 160, 0.0) },
+    // 0.3s - 0.45s: Countermovement dip
+    { base64: makeBodyFrame(120, 160, -0.04) },
+    { base64: makeBodyFrame(120, 160, -0.06) },
+    // 0.5s - 0.8s: Takeoff, upward ascent, and airborne flight apex
+    { base64: makeBodyFrame(120, 160, 0.07) },
+    { base64: makeBodyFrame(120, 160, 0.14) },
+    { base64: makeBodyFrame(120, 160, 0.16) },
+    { base64: makeBodyFrame(120, 160, 0.15) },
+    { base64: makeBodyFrame(120, 160, 0.08) },
+    // 0.9s: Landing touchdown
+    { base64: makeBodyFrame(120, 160, 0.0) },
+    { base64: makeBodyFrame(120, 160, -0.02) },
+    // 1.1s: Return to stance
+    { base64: makeBodyFrame(120, 160, 0.0) },
   ];
-  const resD = await analyzeVideoJumpKinematics(2.5, 68, makeAccelJump(), 'file:///test_video.mp4', jumpSnaps, mp4Jump);
+  const resD = await analyzeVideoJumpKinematics(2.5, 68, makeAccelStatic(), 'file:///test_video.mp4', jumpSnaps, mp4Standard);
   console.log('Status: isValid =', resD.isValid, '| Score =', resD.score);
   console.log('Calculated Jump Height:', resD.jumpHeightCm, 'cm');
   console.log('Calculated Flight Time:', resD.flightTimeSec, 's');
@@ -248,7 +264,7 @@ async function runTests() {
 
   // TEST CASE E: MOVE PHONE AROUND WITHOUT JUMPING
   console.log('\n>>> TEST CASE E: MOVE PHONE AROUND WITHOUT JUMPING (SHAKING)');
-  const resE = await analyzeVideoJumpKinematics(2.0, 68, makeAccelShaking(), 'file:///test_video.mp4', stillSnaps, mp4Static);
+  const resE = await analyzeVideoJumpKinematics(2.0, 68, makeAccelShaking(), 'file:///test_video.mp4', stillSnaps, mp4Standard);
   console.log('Status: isValid =', resE.isValid, '| Score =', resE.score, '| Height =', resE.jumpHeightCm, 'cm');
   console.log('Gate 4 (Camera/Device Stable):', resE.gates![3].passed ? 'PASS' : 'FAIL', '-', resE.gates![3].telemetry);
   console.log('Gate 8 (IMU Agreement):', resE.gates![7].passed ? 'PASS' : 'FAIL', '-', resE.gates![7].telemetry);

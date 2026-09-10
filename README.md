@@ -18,9 +18,9 @@
 ## 🌟 Key Features
 
 ### 1. 🟢 Autonomous Full-Screen Biomechanical Vision Studio
-- **14-Joint Biomechanical Kinetic HUD**: Instant full-body skeletal locking (4 limbs, torso, cranial targeting reticle, and 14 cyan pivot nodes).
-- **Dual-Stroke Laser Optics**: High-contrast glowing neon green stick lines (`#22C55E` / `#00FF66`) with real-time angular telemetry (Hip Angle, Knee Depth, Spine/Torso posture).
-- **Zero Special Hardware Required**: Performs single-shot kinetic evaluation using any standard smartphone camera.
+- **Optical Silhouette & Kinematic HUD**: Real-time full-body silhouette tracking, cranial targeting reticle, and kinetic excursion telemetry.
+- **Dual-Stroke Laser Optics**: High-contrast scanning line and calibrated region boundaries with real-time center-of-mass telemetry.
+- **Zero Special Hardware Required**: Performs verified kinetic evaluation using standard smartphone camera and 100Hz hardware IMU sensors.
 
 ### 2. 🇮🇳 10 Indian Vernacular Languages
 - Full localization with dynamic instant language switcher:

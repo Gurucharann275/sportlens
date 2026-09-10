@@ -14,6 +14,7 @@ import {
   Mp4Kinematics,
   OpticalSnapshot,
   VisionAnalysisResult,
+  DecodedFrame,
 } from './computerVisionEngine';
 
 export type { OpticalSnapshot, VisionAnalysisResult, Mp4Kinematics };
@@ -236,7 +237,8 @@ export function analyzeVideoJumpKinematicsSync(
   videoUri: string | null = null,
   snapshots: OpticalSnapshot[] = [],
   mp4Bytes?: Uint8Array | null,
-  preDecodedMp4?: Mp4Kinematics | null
+  preDecodedMp4?: Mp4Kinematics | null,
+  directDecodedFrames?: DecodedFrame[] | null
 ): JumpAnalysisResult {
   const totalFrames = Math.round(durationSec * VIDEO_FPS);
 
@@ -249,7 +251,8 @@ export function analyzeVideoJumpKinematicsSync(
     snapshots,
     'jump',
     preDecodedMp4,
-    mp4Bytes
+    mp4Bytes,
+    directDecodedFrames
   );
 
   const gates = buildTenGates({
@@ -357,7 +360,7 @@ export function analyzeVideoJumpKinematicsSync(
     takeoffFrame,
     landingFrame,
     totalFrames,
-    confidencePercent: 97.2,
+    confidencePercent: vision.score > 0 ? 92 : 0,
     score: vision.score,
     powerScore,
     motionCurve,
@@ -377,7 +380,8 @@ export async function analyzeVideoJumpKinematics(
   videoUri: string | null = null,
   snapshots: OpticalSnapshot[] = [],
   mp4Bytes?: Uint8Array | null,
-  preDecodedMp4?: Mp4Kinematics | null
+  preDecodedMp4?: Mp4Kinematics | null,
+  directDecodedFrames?: DecodedFrame[] | null
 ): Promise<JumpAnalysisResult> {
   let loadedBytes = mp4Bytes || null;
   if (!loadedBytes && !preDecodedMp4 && videoUri) {
@@ -392,7 +396,8 @@ export async function analyzeVideoJumpKinematics(
     videoUri,
     snapshots,
     loadedBytes,
-    preDecodedMp4
+    preDecodedMp4,
+    directDecodedFrames
   );
 }
 
