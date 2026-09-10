@@ -48,6 +48,13 @@ import {
   AccelSample,
   OpticalSnapshot,
 } from './biomechanicsEngine';
+import {
+  AuthSession,
+  saveAuthenticatedSession,
+  getAuthenticatedSession,
+  clearAuthenticatedSession,
+  generateSessionToken,
+} from './authSessionStorage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -208,6 +215,7 @@ export default function App() {
 
   // Authentication & Onboarding Navigation State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthRestoring, setIsAuthRestoring] = useState(true);
   const [authScreen, setAuthScreen] = useState<'welcome' | 'athlete_auth' | 'recruiter_auth' | 'profile_setup' | 'login_form' | 'register_form'>('welcome');
   const [athleteAuthTab, setAthleteAuthTab] = useState<'login' | 'register'>('login');
   const [recruiterAuthTab, setRecruiterAuthTab] = useState<'login' | 'register'>('login');
@@ -300,31 +308,105 @@ export default function App() {
     aboutMe: 'Aspiring Volleyball athlete from Eluru, Andhra Pradesh.',
   });
 
-  // IST Streak & Clean State Manager on Mount
+  // Persistent Auth Session Restoration & IST Streak Manager on Mount
   useEffect(() => {
-    // Clean initial state sync
-    setAthlete((prev) => validateAndSyncStreakIST({
-      ...prev,
-      ovr: 0,
-      tests: 0,
-      avgRating: 0,
-      bestRating: 0,
-      improvement: 0,
-      stats: { speed: 0, power: 0, agility: 0, stamina: 0, jump: 0, technique: 0 },
-      rawUnits: {
-        jump: '—',
-        power: '—',
-        speed: '—',
-        agility: '—',
-        stamina: '—',
-        technique: '—',
-      },
-      percentileBadge: 'UNRANKED',
-      streakDays: 0,
-      xp: 0,
-      level: 1,
-      levelTitle: 'Grassroots Rookie',
-    }));
+    const restoreSession = async () => {
+      try {
+        const session = await getAuthenticatedSession();
+        if (session && session.identifier) {
+          if (session.mode === 'recruiter') {
+            let savedScouts: any[] = [];
+            try {
+              const stored = await AsyncStorage.getItem('scoutpulse_registered_scouts');
+              if (stored) savedScouts = JSON.parse(stored);
+            } catch (e) {}
+
+            const cleanId = session.identifier.toUpperCase();
+            const isMasterUser = (cleanId === 'GOAT-CHARAN' || cleanId === '6301475315' || cleanId === 'CHARAN');
+            const customMatch = savedScouts.find(s => s.id.toUpperCase() === cleanId);
+
+            if (isMasterUser || customMatch) {
+              const scoutName = customMatch ? customMatch.name : 'Charan (Chief Scout & Admin)';
+              const scoutOrg = customMatch ? customMatch.org : 'SAI National Talent Commission & SAAP';
+              setActiveScoutProfile({
+                name: scoutName,
+                org: scoutOrg,
+                license: `NIS Patiala Master Certified • ID: ${cleanId}`,
+                tier: 'govt',
+                tierLabel: 'SAI CHIEF NATIONAL SCOUT & ADMIN',
+                cryptoKey: session.token || `SHA256-SAI-${cleanId}`,
+                verificationBadge: 'SAI CENTRAL VERIFIED (GRADE A+)',
+              });
+              setAppMode('recruiter');
+              setIsLoggedIn(true);
+              setIsAuthRestoring(false);
+              return;
+            }
+          } else {
+            // Athlete Mode
+            const cleanPhone = session.identifier;
+            if (cleanPhone === '9999999999') {
+              const ownerProfile = {
+                name: 'Sashanth Ponnada',
+                phone: '9999999999',
+                pin: '2223',
+                avatar: null,
+                age: 21,
+                district: 'NTR',
+                state: 'Andhra Pradesh',
+                primarySport: 'Running',
+                height: 182,
+                weight: 76,
+                dominantFoot: 'Right',
+                ovr: 0,
+                tests: 0,
+                avgRating: 0,
+                bestRating: 0,
+                improvement: 0,
+                stats: { speed: 0, power: 0, agility: 0, stamina: 0, jump: 0, technique: 0 },
+                rawUnits: { jump: '—', power: '—', speed: '—', agility: '—', stamina: '—', technique: '—' },
+                percentileBadge: 'UNRANKED',
+                streakDays: 0,
+                lastActiveDateIST: '',
+                activeDaysThisWeek: [] as number[],
+                xp: 0,
+                level: 1,
+                levelTitle: 'Grassroots Rookie',
+                aboutMe: 'Charan - Aspiring Volleyball athlete from Eluru, Andhra Pradesh.',
+              };
+              setAthlete(validateAndSyncStreakIST(ownerProfile));
+              setAppMode('athlete');
+              setIsLoggedIn(true);
+              setIsAuthRestoring(false);
+              return;
+            }
+
+            const savedData = await AsyncStorage.getItem(`scoutpulse_user_${cleanPhone}`);
+            if (savedData) {
+              const parsed = JSON.parse(savedData);
+              if (parsed && parsed.name) {
+                setAthlete(validateAndSyncStreakIST(parsed));
+                setAppMode('athlete');
+                setIsLoggedIn(true);
+                setIsAuthRestoring(false);
+                return;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Session restoration failed safely:', err);
+        try {
+          await clearAuthenticatedSession();
+        } catch (e) {}
+      }
+
+      // If no valid session exists, sync defaults and show login
+      setAthlete((prev) => validateAndSyncStreakIST(prev));
+      setIsAuthRestoring(false);
+    };
+
+    restoreSession();
   }, []);
 
   // Central Registry of Registered Athletes (for Recruiter Talent Discovery)
@@ -500,6 +582,13 @@ export default function App() {
 
       setAppMode('recruiter');
       setIsLoggedIn(true);
+      await saveAuthenticatedSession({
+        version: 1,
+        mode: 'recruiter',
+        identifier: cleanId,
+        token: cryptoKey,
+        authenticatedAt: Date.now(),
+      });
       Alert.alert(
         'Scout Verified & Authenticated 🏛️',
         `✅ Central Registry Match: ID ${cleanId}\n🔐 Cryptographic Key: ${cryptoKey}\n\nWelcome to your Command Center, ${scoutName}!`
@@ -590,6 +679,13 @@ export default function App() {
 
       setAppMode('recruiter');
       setIsLoggedIn(true);
+      await saveAuthenticatedSession({
+        version: 1,
+        mode: 'recruiter',
+        identifier: cleanId,
+        token: cryptoKey,
+        authenticatedAt: Date.now(),
+      });
       Alert.alert(
         'Scout Verified & Registered! 🏛️',
         `✅ Institutional Verification: PASS\n🔐 Digital Signing Key Generated\n\nWelcome to your Scouting Command Center, ${cleanName}!`
@@ -700,6 +796,13 @@ export default function App() {
       setAthlete(validateAndSyncStreakIST(ownerProfile));
       setAppMode('athlete');
       setIsLoggedIn(true);
+      await saveAuthenticatedSession({
+        version: 1,
+        mode: 'athlete',
+        identifier: '9999999999',
+        token: generateSessionToken('9999999999'),
+        authenticatedAt: Date.now(),
+      });
       Alert.alert('Welcome Back, Charan! 👑👽', 'Exclusive Master Account Recognized & Authenticated.');
       return;
     }
@@ -732,6 +835,13 @@ export default function App() {
         } catch (e) {}
         setAthlete(validateAndSyncStreakIST(parsed));
         setIsLoggedIn(true);
+        await saveAuthenticatedSession({
+          version: 1,
+          mode: 'athlete',
+          identifier: cleanPhone,
+          token: generateSessionToken(cleanPhone),
+          authenticatedAt: Date.now(),
+        });
         Alert.alert('Welcome Back! 🏆', `Logged in as ${parsed.name} (${parsed.tests} tests on record).`);
       } else {
         try {
@@ -818,6 +928,13 @@ export default function App() {
     } catch (e) {}
 
     setIsLoggedIn(true);
+    await saveAuthenticatedSession({
+      version: 1,
+      mode: 'athlete',
+      identifier: cleanPhone || '9876543210',
+      token: generateSessionToken(cleanPhone || '9876543210'),
+      authenticatedAt: Date.now(),
+    });
   };
 
   // Open Edit Profile Modal
@@ -1658,6 +1775,24 @@ export default function App() {
     );
   };
 
+  // Check for persisted session BEFORE deciding to show the login screen
+  if (isAuthRestoring) {
+    return (
+      <SafeAreaView style={[styles.safeContainer, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#090514' }]}>
+        <StatusBar barStyle="light-content" backgroundColor="#090514" />
+        <LinearGradient
+          colors={['#1E103C', '#090514']}
+          style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', gap: 16 }}
+        >
+          <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(139, 92, 246, 0.2)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#8B5CF6' }}>
+            <Ionicons name="pulse" size={36} color="#C084FC" />
+          </View>
+          <ActivityIndicator size="large" color="#8B5CF6" />
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
+
   // ================= VIEW: AUTHENTICATION FLOW =================
   if (!isLoggedIn) {
     return (
@@ -2245,7 +2380,8 @@ export default function App() {
                     {
                       text: 'Log Out',
                       style: 'destructive',
-                      onPress: () => {
+                      onPress: async () => {
+                        await clearAuthenticatedSession();
                         setIsLoggedIn(false);
                         setAuthScreen('welcome');
                         setAppMode('athlete');
@@ -3106,7 +3242,8 @@ export default function App() {
                       {
                         text: 'Log Out',
                         style: 'destructive',
-                        onPress: () => {
+                        onPress: async () => {
+                          await clearAuthenticatedSession();
                           setIsLoggedIn(false);
                           setAuthScreen('welcome');
                           setPhone('');
